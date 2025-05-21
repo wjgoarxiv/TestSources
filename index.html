@@ -3,12 +3,14 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>GLTF Viewer UI</title>
+  <title>GLTF Viewer - AI 기반 누출 탐지 시스템</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', 'Arial', sans-serif;
       overflow: hidden;
+      background-color: #121212;
+      color: #E0E0E0;
     }
 
     .container {
@@ -18,7 +20,7 @@
 
     .right-panel {
       flex-grow: 1;
-      background: #f0f0f0;
+      background: #1A1D2E;
       position: relative;
     }
 
@@ -31,66 +33,169 @@
     #overlay-buttons {
       position: absolute;
       top: 20px;
-      left: 20px;
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 10000;
       display: flex;
-      flex-direction: column;
       gap: 10px;
     }
 
     #overlay-buttons button {
-      padding: 8px 12px;
-      font-size: 14px;
-      background-color: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 5px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #00CFE8;
+      background: transparent;
+      border: 1px solid #00CFE8;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    #overlay-buttons button:hover {
+      background: rgba(0, 207, 232, 0.1);
+      box-shadow: 0 0 15px rgba(0, 207, 232, 0.3);
+    }
+
+    #overlay-buttons button.active {
+      background: #00CFE8;
+      color: #1A1D2E;
+      box-shadow: 0 0 15px rgba(0, 207, 232, 0.5);
     }
 
     #popup {
       position: fixed;
       display: none;
-
       top: 10%;
-      left: 40%;
-      /*
-      top: 100px;
-      left: 200px;
-      */
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 29, 46, 0.88);
+      backdrop-filter: blur(12px) saturate(190%);
+      -webkit-backdrop-filter: blur(12px) saturate(190%);
+      border: 1px solid rgba(0, 207, 232, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 207, 232, 0.2);
       font-size: 14px;
       z-index: 9999;
-      width: 50vw;       /* 고정 너비 */
+      width: 50vw;
       min-width: 250px;
-      overflow: auto;      /* 내용이 넘치면 스크롤 */
-      max-height: 80vh;     /* 화면 높이의 최대 80% */
+      overflow: auto;
+      max-height: 80vh;
     }
 
     #popup-header {
       cursor: move;
-      background: #f0f0f0;
-      padding: 5px 10px;
-      border-bottom: 1px solid #ccc;
+      background: rgba(26, 29, 46, 0.7);
+      padding: 10px 15px;
+      border-bottom: 1px solid rgba(0, 207, 232, 0.3);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-radius: 5px 5px 0 0;
+      border-radius: 16px 16px 0 0;
+    }
+
+    #popup-header button {
+      background: transparent;
+      color: #00CFE8;
+      border: 1px solid #00CFE8;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      font-size: 14px;
+      line-height: 26px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #popup-header button:hover {
+      background: rgba(0, 207, 232, 0.2);
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(0, 207, 232, 0.5);
     }
 
     #popup-content {
       width: 90%;
-      padding: 10px;
+      padding: 15px;
+      margin: 0 auto;
+    }
+
+    #info-panel {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      max-width: 300px;
+      background: rgba(26, 29, 46, 0.88);
+      backdrop-filter: blur(12px) saturate(190%);
+      -webkit-backdrop-filter: blur(12px) saturate(190%);
+      border: 1px solid rgba(0, 207, 232, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 207, 232, 0.2);
+      padding: 20px;
+      color: #E0E0E0;
+      font-size: 0.85rem;
+      z-index: 100;
+    }
+
+    #info-panel h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #00CFE8;
+      border-bottom: 1px solid rgba(0, 207, 232, 0.3);
+      padding-bottom: 10px;
+    }
+
+    #info-panel p {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    #info-panel ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #info-panel li {
+      margin-bottom: 5px;
+    }
+
+    #info-panel span {
+      font-weight: 500;
+      color: #FFFFFF;
+    }
+
+    .sensor-label {
+      color: #E0E0E0;
+      background-color: rgba(26, 29, 46, 0.7);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      position: absolute;
+      transform: translateX(-50%) translateY(-160%);
+      white-space: nowrap;
+      pointer-events: none;
+      border: 1px solid rgba(0, 207, 232, 0.3);
+      z-index: 1;
+    }
+
+    #sensorChart {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: auto;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
-
   <div class="container">
     <div class="right-panel" id="viewer"></div>
   </div>
@@ -102,10 +207,17 @@
     <button onclick="Dispersion()">암모니아 확산 양상</button>
   </div>
 
+  <div id="info-panel">
+    <h2>시뮬레이션 정보</h2>
+    <p>현재 데모: <span id="currentDemo">대기 중</span></p>
+    <p id="sensorInfo">센서를 클릭하면 정보가 표시됩니다.</p>
+    <div id="sensorList"></div>
+  </div>
+
   <div id="popup">
     <div id="popup-header">
-      <span><strong>정보</strong></span>
-      <button onclick="popup.style.display='none'; popupLocked=true;">✖</button>
+      <span><strong id="popup-title">정보</strong></span>
+      <button onclick="popup.style.display='none'; popupLocked=false;">✖</button>
     </div>
     <div id="popup-content"></div>
   </div>
@@ -119,18 +231,20 @@
     let scene, camera, renderer, loader, controls, currentModel;
     const popup = document.getElementById('popup');
     const popupHeader = document.getElementById('popup-header');
-    let popupLocked = true;  // 팝업 잠금 여부 (AI 학습 시 true)
+    const popupTitle = document.getElementById('popup-title');
+    const currentDemoDisplay = document.getElementById('currentDemo');
+    let popupLocked = false;  // 팝업 잠금 여부
 
     init();
     loadModel('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/model_GE-v1.glb');
 
-
     function init() {
       const container = document.getElementById('viewer');
       scene = new THREE.Scene();
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      scene.background = new THREE.Color(0x1A1D2E);  // 어두운 파란색 배경으로 변경
+      
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(container.clientWidth, container.clientHeight);
-      scene.background = null;
       container.appendChild(renderer.domElement);
 
       const aspect = container.clientWidth / container.clientHeight;
@@ -141,18 +255,53 @@
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       loader = new THREE.GLTFLoader();
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      // 향상된 조명 설정
+      scene.add(new THREE.AmbientLight(0xaaaaaa, 0.7));
+      const dirLight = new THREE.DirectionalLight(0x00CFE8, 0.5); // 사이언 컬러 강조
       dirLight.position.set(5, 10, 7.5);
       scene.add(dirLight);
+      
+      const pointLight = new THREE.PointLight(0xffffff, 0.3);
+      pointLight.position.set(-5, -5, -5);
+      scene.add(pointLight);
 
       animate();
+      resetUI();
+    }
+
+    function resetUI() {
+      // UI 상태 초기화
+      currentDemoDisplay.textContent = "대기 중";
+      document.getElementById('sensorInfo').textContent = "센서를 클릭하면 정보가 표시됩니다.";
+      document.getElementById('sensorList').innerHTML = "";
+      
+      // 기존 버튼 스타일 초기화
+      const buttons = document.querySelectorAll('#overlay-buttons button');
+      buttons.forEach(btn => btn.classList.remove('active'));
     }
 
     function loadModel(path) {
       if (currentModel) scene.remove(currentModel);
+      
       loader.load(path, function (gltf) {
         currentModel = gltf.scene;
+        
+        // 모델 가시성 향상을 위한 설정
+        currentModel.traverse(function(child) {
+          if (child.isMesh) {
+            // 기존 재질을 향상된 재질로 교체
+            const origMaterial = child.material;
+            const enhancedMaterial = new THREE.MeshStandardMaterial({
+              color: origMaterial.color || 0xCCCCCC,
+              metalness: 0.3,
+              roughness: 0.6,
+              emissive: 0x222222,
+              emissiveIntensity: 0.2
+            });
+            child.material = enhancedMaterial;
+          }
+        });
+        
         scene.add(currentModel);
       }, undefined, function (error) {
         console.error('모델 로드 실패:', error);
@@ -163,19 +312,58 @@
       requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
+      
+      // 라벨 위치 업데이트
+      updateLabels();
+    }
+
+    function updateLabels() {
+      // 라벨 있는 모든 요소 업데이트 (상태 큐브, 센서 등)
+      document.querySelectorAll('.sensor-label').forEach(label => {
+        const id = label.getAttribute('data-id');
+        if (!id) return;
+        
+        const object = scene.getObjectByName(id);
+        if (object) {
+          const vector = object.position.clone().project(camera);
+          const x = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+          const y = (-vector.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
+          label.style.left = `${x}px`;
+          label.style.top = `${y}px`;
+          label.style.display = vector.z < 1 ? 'block' : 'none';
+        }
+      });
     }
 
     // 장비 상태 정육면체 생성 함수
-    function addStatusCubeAt(x, y, z) {
+    function addStatusCubeAt(x, y, z, name) {
+      // 기존 객체 있으면 제거
+      const existingCube = scene.getObjectByName(name);
+      if (existingCube) {
+        scene.remove(existingCube);
+      }
+      
       const geometry = new THREE.BoxGeometry(2, 10, 3);
       const material = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
         transparent: true,
-        opacity: 0.5, // 0 = 완전 투명, 1 = 불투명
+        opacity: 0.5,
+        emissive: 0x003300,
+        emissiveIntensity: 0.2
       });
       const cube = new THREE.Mesh(geometry, material);
       cube.position.set(x, y, z);
+      cube.name = name;
       scene.add(cube);
+      
+      // 라벨 추가
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'sensor-label';
+      labelDiv.textContent = name;
+      labelDiv.setAttribute('data-id', name);
+      document.body.appendChild(labelDiv);
+      
+      return cube;
     }
 
     const clickableCubes = [];
@@ -185,51 +373,70 @@
 
     // 라벨 큐브 생성
     function addLabeledCube(x, y, z, name, size = 1, imagePath = null) {
+      // 기존에 있으면 제거
+      const existingCube = scene.getObjectByName(name);
+      if (existingCube) {
+        scene.remove(existingCube);
+        clickableCubes.splice(clickableCubes.indexOf(existingCube), 1);
+      }
+      
       const geometry = new THREE.BoxGeometry(size, size, size);
       const material = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
+        color: 0x00CFE8,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.7,
+        emissive: 0x006774,
+        emissiveIntensity: 0.3
       });
       const cube = new THREE.Mesh(geometry, material);
       cube.position.set(x, y, z);
       cube.userData.name = name;
       cube.userData.image = imagePath;
+      cube.name = name;
       scene.add(cube);
       clickableCubes.push(cube);
 
       // 라벨
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.font = '40px Arial';
-      ctx.fillStyle = 'red';
-      ctx.fillText(name, 10, 50);
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(5, 2.5, 1);
-      sprite.position.set(x, y + size, z);
-      scene.add(sprite);
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'sensor-label';
+      labelDiv.textContent = name;
+      labelDiv.setAttribute('data-id', name);
+      document.body.appendChild(labelDiv);
+      
+      // 센서 정보 패널에 추가
+      const sensorList = document.getElementById('sensorList');
+      const sensorItem = document.createElement('div');
+      sensorItem.innerHTML = `<p>${name}: <span id="${name.replace(/\s+/g, '')}_value">N/A</span></p>`;
+      sensorList.appendChild(sensorItem);
+      
+      return cube;
     }
-    // 텍스트 흐릿하게 나오는 현상 처리 필요 (참고: https://namocom.tistory.com/191)
 
     function LearningStart() {
+      resetUI();
+      document.querySelector('button[onclick="LearningStart()"]').classList.add('active');
+      currentDemoDisplay.textContent = "AI 학습";
+      
       popupLocked = true;  // AI 학습에서 생성된 팝업은 고정
-      const name = "AI 학습";
+      popupTitle.textContent = "AI 학습";
+      
       const imgPath = "https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png";
 
       const html = `
-      <strong>${name}</strong><br>
-      <img src="${imgPath}" alt="${name}" style="width:100%; max-height:300px; object-fit:contain; margin-top:5px;"><br>
-      <p style="margin-top: 5px;">AI 학습 시작 화면입니다.</p>
+      <div style="text-align: center; margin-bottom: 15px;">
+        <img src="${imgPath}" alt="AI 학습 이미지" style="width:90%; max-height:300px; object-fit:contain; margin-top:5px; border-radius:8px; border:1px solid rgba(0,207,232,0.3);">
+      </div>
+      <p style="line-height:1.6;">AI 학습이 진행 중입니다. 누출 패턴 데이터를 분석하고 있습니다.</p>
+      <div style="margin-top:15px; background: rgba(0,207,232,0.1); padding:10px; border-radius:8px; border:1px solid rgba(0,207,232,0.2);">
+        <h3 style="margin-top:0; color:#00CFE8; font-size:1rem;">학습 진행 상황</h3>
+        <p>데이터 포인트: <strong>23,450개</strong></p>
+        <p>모델 정확도: <strong>97.2%</strong></p>
+        <p>남은 시간: <strong>약 2분</strong></p>
+      </div>
     `;
 
       document.getElementById('popup-content').innerHTML = html;
-      
-      popup.style.top = '10%';
-      popup.style.left = '40%';
       popup.style.display = 'block';
-
     }
 
     let leakChart;             // Chart.js 인스턴스
@@ -238,14 +445,18 @@
     let leakIndex = 0;         // 현재 시점 인덱스
 
     function DemoStart() {
+      resetUI();
+      document.querySelector('button[onclick="DemoStart()"]').classList.add('active');
+      currentDemoDisplay.textContent = "데모 시작";
+      
       clearInterval(leakTimer);  // 이전 실행 중지
       leakChart?.destroy();      // 기존 그래프 제거
       leakData = [];
       leakIndex = 0;
+      popupLocked = true;
 
       const speedFactor = 5; // ✅ n배 빠르게 (예: 5배 빠르게)
 
-      // fetch('data/leak_7.csv') // 로컬 파일인 경우
       fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_7.csv') 
         .then(response => response.text())
         .then(csvText => {
@@ -265,9 +476,16 @@
             leakData.push({ x: time, yValues: values });
           }
 
-          document.getElementById('popup-content').innerHTML = `<canvas id="leakChart" width="100%" height="100%"></canvas>`;
-          //popup.style.top = '10%';
-          //popup.style.left = '20%';
+          popupTitle.textContent = "실시간 센서 데이터";
+          document.getElementById('popup-content').innerHTML = `
+            <div class="chart-container">
+              <canvas id="leakChart"></canvas>
+            </div>
+            <div style="margin-top: 15px; font-size: 0.9rem; color: #E0E0E0;">
+              <p>현재 시간: <span id="currentTime">0.00</span>초</p>
+              <p>최대 농도: <span id="maxConcentration">0.00</span> ppm</p>
+            </div>
+          `;
           popup.style.display = 'block';
 
           const ctx = document.getElementById('leakChart').getContext('2d');
@@ -280,7 +498,9 @@
                 borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
                 backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
                 fill: false,
-                tension: 0.2
+                tension: 0.2,
+                pointRadius: 1,
+                pointHoverRadius: 3
               }))
             },
             options: {
@@ -288,18 +508,34 @@
               scales: {
                 x: {
                   type: 'linear',
-                  title: { display: true, text: 'Time [s]' },
+                  title: { display: true, text: 'Time [s]', color: '#E0E0E0' },
                   min: 0,
-                  //max: 10
+                  grid: { color: 'rgba(0, 207, 232, 0.1)' },
+                  ticks: { color: '#B0B0B0' }
                 },
                 y: {
-                  title: { display: true, text: 'NH3 [ppm]' },
+                  title: { display: true, text: 'NH3 [ppm]', color: '#E0E0E0' },
                   min: 0,
-                  //max: 100
+                  grid: { color: 'rgba(0, 207, 232, 0.1)' },
+                  ticks: { color: '#B0B0B0' }
                 }
               },
               responsive: true,
-              maintainAspectRatio: false
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  labels: { color: '#E0E0E0' }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(26, 29, 46, 0.9)',
+                  borderColor: 'rgba(0, 207, 232, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#00CFE8',
+                  bodyColor: '#E0E0E0',
+                  displayColors: true,
+                  padding: 10
+                }
+              }
             }
           });
 
@@ -307,9 +543,17 @@
           leakTimer = setInterval(() => {
             if (leakIndex < leakData.length) {
               const point = leakData[leakIndex];
+              
+              document.getElementById('currentTime').textContent = point.x.toFixed(2);
+              let maxVal = 0;
+              
               point.yValues.forEach((val, idx) => {
                 leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                if (val > maxVal) maxVal = val;
               });
+              
+              document.getElementById('maxConcentration').textContent = maxVal.toFixed(2);
+              
               // 👉 x축 max 값을 현재 시간 + 1로 실시간 업데이트
               leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
               leakChart.update();
@@ -320,57 +564,44 @@
           }, 1000 / speedFactor);
         })
         .catch(error => {
-          document.getElementById('popup-content').innerHTML = `<p style="color:red;">CSV 로드 실패: ${error}</p>`;
+          popupTitle.textContent = "오류";
+          document.getElementById('popup-content').innerHTML = `<p style="color:#ff4d4d;">CSV 로드 실패: ${error}</p>`;
           popup.style.display = 'block';
         });
-
     }
 
-
     function LeakDetection() {
+      resetUI();
+      document.querySelector('button[onclick="LeakDetection()"]').classList.add('active');
+      currentDemoDisplay.textContent = "AI 기반 누출 추정";
+      
       clearInterval(leakTimer);
       leakChart?.destroy();
       leakData = [];
       leakIndex = 0;
+      popupLocked = true;
 
       const speedFactor = 5;  // n배 빠르게
 
-      // 기존 큐브 찾기 또는 새로 생성
-      let statusCube1;
-      let statusCube2;
-      let statusCube3;
-      /*
-      const existing = scene.children.find(obj => obj.name === 'statusCube');
-      if (existing) {
-        statusCube = existing;
-      } else {
-        const geometry = new THREE.BoxGeometry(2, 10, 3);
-        const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
-        statusCube = new THREE.Mesh(geometry, material);
-        statusCube.position.set(3.5, -1, 2);
-        statusCube.name = 'statusCube';
-        scene.add(statusCube);
-      }
-      */
-      const geometry = new THREE.BoxGeometry(2, 10, 3);
+      // 상태 큐브 생성
+      const statusCube1 = addStatusCubeAt(3.5, -1, 2, 'GE#1');
+      const statusCube2 = addStatusCubeAt(-0.4, -1, 2, 'GE#2');
+      const statusCube3 = addStatusCubeAt(-4.3, -1, 2, 'GE#3');
 
-      statusCube1 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
-      statusCube2 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
-      statusCube3 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
+      popupTitle.textContent = "AI 누출 추정";
+      document.getElementById('popup-content').innerHTML = `
+        <div style="margin-bottom: 15px; background: rgba(0,207,232,0.1); padding:10px; border-radius:8px; border:1px solid rgba(0,207,232,0.2);">
+          <h3 style="margin-top:0; color:#00CFE8; font-size:1rem;">누출 추정 결과</h3>
+          <p>추정 누출 위치: <strong>GE#1</strong></p>
+          <p>추정 확률: <strong id="leakProbability">0%</strong></p>
+          <p>현재 분석 시간: <strong id="analysisTime">0.00초</strong></p>
+        </div>
+        <div class="chart-container">
+          <canvas id="leakChart"></canvas>
+        </div>
+      `;
+      popup.style.display = 'block';
 
-      statusCube1.position.set(3.5, -1, 2);
-      statusCube2.position.set(-0.4, -1, 2);
-      statusCube3.position.set(-4.3, -1, 2);
-
-      statusCube1.name = 'GE#1';
-      statusCube2.name = 'GE#2';
-      statusCube3.name = 'GE#3';
-
-      scene.add(statusCube1);
-      scene.add(statusCube2);
-      scene.add(statusCube3);
-
-      // fetch('data/leakDetection.csv') // 로컬 파일인 경우
       fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leakDetection.csv') 
         .then(response => response.text())
         .then(csvText => {
@@ -390,11 +621,6 @@
             leakData.push({ x: time, yValues: values });
           }
 
-          document.getElementById('popup-content').innerHTML = `<canvas id="leakChart" width="600" height="600"></canvas>`;
-          popup.style.top = '10%';
-          popup.style.left = '40%';
-          popup.style.display = 'block';
-
           const ctx = document.getElementById('leakChart').getContext('2d');
           leakChart = new Chart(ctx, {
             type: 'line',
@@ -405,7 +631,9 @@
                 borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
                 backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
                 fill: false,
-                tension: 0.2
+                tension: 0.2,
+                pointRadius: 1,
+                pointHoverRadius: 3
               }))
             },
             options: {
@@ -413,18 +641,34 @@
               scales: {
                 x: {
                   type: 'linear',
-                  title: { display: true, text: 'Time [s]' },
+                  title: { display: true, text: 'Time [s]', color: '#E0E0E0' },
                   min: 0,
-                  //max: 10
+                  grid: { color: 'rgba(0, 207, 232, 0.1)' },
+                  ticks: { color: '#B0B0B0' }
                 },
                 y: {
-                  title: { display: true, text: 'NH3 [ppm]' },
+                  title: { display: true, text: 'NH3 [ppm]', color: '#E0E0E0' },
                   min: 0,
-                  //max: 100
+                  grid: { color: 'rgba(0, 207, 232, 0.1)' },
+                  ticks: { color: '#B0B0B0' }
                 }
               },
               responsive: true,
-              maintainAspectRatio: false
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  labels: { color: '#E0E0E0' }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(26, 29, 46, 0.9)',
+                  borderColor: 'rgba(0, 207, 232, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#00CFE8',
+                  bodyColor: '#E0E0E0',
+                  displayColors: true,
+                  padding: 10
+                }
+              }
             }
           });
 
@@ -432,6 +676,11 @@
           leakTimer = setInterval(() => {
             if (leakIndex < leakData.length) {
               const point = leakData[leakIndex];
+              const probability = Math.min(100, Math.floor(point.x * 2.5));
+              
+              document.getElementById('leakProbability').textContent = `${probability}%`;
+              document.getElementById('analysisTime').textContent = `${point.x.toFixed(2)}초`;
+              
               point.yValues.forEach((val, idx) => {
                 leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
               });
@@ -442,16 +691,18 @@
               const red1 = Math.floor(point.yValues[0] * 255);
               const green1 = Math.floor((1 - point.yValues[0]) * 255);
               statusCube1.material.color.setRGB(red1 / 255, green1 / 255, 0);
+              statusCube1.material.emissive.setRGB(red1 / 255 * 0.3, green1 / 255 * 0.3, 0);
 
               const red2 = Math.floor(point.yValues[1] * 255);
               const green2 = Math.floor((1 - point.yValues[1]) * 255);
               statusCube2.material.color.setRGB(red2 / 255, green2 / 255, 0);
+              statusCube2.material.emissive.setRGB(red2 / 255 * 0.3, green2 / 255 * 0.3, 0);
 
               const red3 = Math.floor(point.yValues[2] * 255);
               const green3 = Math.floor((1 - point.yValues[2]) * 255);
               statusCube3.material.color.setRGB(red3 / 255, green3 / 255, 0);
+              statusCube3.material.emissive.setRGB(red3 / 255 * 0.3, green3 / 255 * 0.3, 0);
 
-              console.log(point.yValues[0]);
               leakChart.update();
               leakIndex++;
             } else {
@@ -460,15 +711,29 @@
           }, 1000 / speedFactor);
         })
         .catch(error => {
-          document.getElementById('popup-content').innerHTML = `<p style="color:red;">CSV 로드 실패: ${error}</p>`;
+          popupTitle.textContent = "오류";
+          document.getElementById('popup-content').innerHTML = `<p style="color:#ff4d4d;">CSV 로드 실패: ${error}</p>`;
           popup.style.display = 'block';
         });
     }
 
-
     function Dispersion() {
-
-
+      resetUI();
+      document.querySelector('button[onclick="Dispersion()"]').classList.add('active');
+      currentDemoDisplay.textContent = "암모니아 확산 양상";
+      popupLocked = false;
+      popup.style.display = 'none';
+      
+      // 기존 확산 관련 객체 제거
+      scene.children.forEach(obj => {
+        if (obj.userData && obj.userData.type === 'dispersion') {
+          scene.remove(obj);
+        }
+      });
+      
+      // 파티클 배열 초기화
+      const particles = [];
+      
       // [1] 외부 박스 크기 정의
       const boxWidth = 13.8;
       const boxHeight = 21.5;
@@ -480,8 +745,9 @@
       // [2] 외부 박스 그리기
       const outerBox = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
       const outerEdges = new THREE.EdgesGeometry(outerBox);
-      const outerMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const outerMaterial = new THREE.LineBasicMaterial({ color: 0x00CFE8, opacity: 0.7, transparent: true });
       const outerWireframe = new THREE.LineSegments(outerEdges, outerMaterial);
+      outerWireframe.userData.type = 'dispersion';
       scene.add(outerWireframe);
 
       // [3] 내부 장애물 정의 (center + size)
@@ -499,9 +765,10 @@
 
         const geom = new THREE.BoxGeometry(obs.size.x, obs.size.y, obs.size.z);
         const edges = new THREE.EdgesGeometry(geom);
-        const mat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        const mat = new THREE.LineBasicMaterial({ color: 0xff0000, opacity: 0.7, transparent: true });
         const wire = new THREE.LineSegments(edges, mat);
         wire.position.copy(obs.center); // 중심 좌표 기준 위치
+        wire.userData.type = 'dispersion';
         scene.add(wire);
       });
 
@@ -516,7 +783,7 @@
       for (let i = 0; i < gridCountX; i++) {
         for (let j = 0; j < gridCountY; j++) {
           const material = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
+            color: 0x00CFE8,
             transparent: true,
             opacity: 0.2,
             side: THREE.DoubleSide
@@ -531,15 +798,30 @@
             -halfH + gridHeight * (j + 0.5),
             -halfD + 0.01  // XY 평면에 z 고정
           );
+          plane.userData.type = 'dispersion';
           scene.add(plane);
           gridPlanes.push({ mesh: plane, count: 0 });
         }
       }
+      
       // [4] 누출원 위치
       const leakSource = new THREE.Vector3(4.8, 2.0, 0.4);
+      
+      // 누출원 시각화
+      const sourceGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+      const sourceMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff4500,
+        emissive: 0xcc3700,
+        emissiveIntensity: 0.5,
+        metalness: 0.3,
+        roughness: 0.4
+      });
+      const sourceMesh = new THREE.Mesh(sourceGeometry, sourceMaterial);
+      sourceMesh.position.copy(leakSource);
+      sourceMesh.userData.type = 'dispersion';
+      scene.add(sourceMesh);
 
       // [5] 파티클 설정
-      const particles = [];
       const maxParticles = 1000;
       const interval = 100;
       const speed = 0.02;
@@ -553,7 +835,7 @@
         ).normalize();
 
         const material = new THREE.MeshBasicMaterial({
-          color: 0xff0000,
+          color: 0xff4500,
           transparent: true,
           opacity: 0.6
         });
@@ -565,18 +847,26 @@
         particle.position.copy(leakSource);
         particle.userData = {
           direction,
-          age: 0
+          age: 0,
+          type: 'dispersion'
         };
         scene.add(particle);
         particles.push(particle);
       }
 
-      setInterval(() => {
+      const particleInterval = setInterval(() => {
         if (particles.length < maxParticles) createParticle();
       }, interval);
 
       function animateDispersion() {
-        requestAnimationFrame(animateDispersion);
+        if (!scene.getObjectByName(sourceMesh.uuid)) {
+          // 확산 시뮬레이션이 중단된 경우
+          cancelAnimationFrame(dispersionFrameId);
+          clearInterval(particleInterval);
+          return;
+        }
+        
+        dispersionFrameId = requestAnimationFrame(animateDispersion);
 
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
@@ -675,20 +965,19 @@
             const t = maxCount > 0 ? (g.count - minCount) / (maxCount - minCount || 1) : 0;
             const r = t;
             const gVal = 1 - t;
-            g.mesh.material.color.setRGB(r, gVal, 0);
+            const b = 0.3 * (1 - t); // 약간의 파란색 추가로 시안색 효과
+            g.mesh.material.color.setRGB(r, gVal, b);
           });
-
         }
-
-        renderer.render(scene, camera);
       }
 
-      animateDispersion();
+      let dispersionFrameId = requestAnimationFrame(animateDispersion);
     }
 
     let isDragging = false, offsetX = 0, offsetY = 0;
 
     popupHeader.addEventListener('mousedown', (e) => {
+      if (e.target.tagName.toLowerCase() === 'button') return; // 버튼 클릭 시 드래그 방지
       isDragging = true;
       const rect = popup.getBoundingClientRect();
       offsetX = e.clientX - rect.left;
@@ -699,6 +988,7 @@
       if (isDragging) {
         popup.style.left = (e.clientX - offsetX) + 'px';
         popup.style.top = (e.clientY - offsetY) + 'px';
+        popup.style.transform = 'none'; // 드래그 시 transform 제거
       }
     });
 
@@ -708,16 +998,17 @@
 
     window.addEventListener('resize', () => {
       const container = document.getElementById('viewer');
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
     });
 
     window.addEventListener('click', (event) => {
-
-      // 1. 데모 버튼이면 raycaster 검사 생략
+      // 1. UI 요소면 raycaster 검사 생략
       if (
         event.target.closest('#popup') ||
-        event.target.closest('#overlay-buttons')
+        event.target.closest('#overlay-buttons') ||
+        event.target.closest('#info-panel')
       ) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
@@ -734,14 +1025,23 @@
         const imgPath = obj.userData.image || 'default.png';
 
         const html = `
-        <strong>${name}</strong><br>
-        <img src="${imgPath}" alt="${name}" style="width:100%; max-height:150px; object-fit:contain; margin-top:5px;"><br>
-        <em>(x: ${event.clientX}, y: ${obj.position.y.toFixed(2)}, z: ${obj.position.z.toFixed(2)})</em>
-      `;
+          <div style="text-align: center; margin-bottom: 15px;">
+            <img src="${imgPath}" alt="${name}" style="width:90%; max-height:200px; object-fit:contain; margin-top:5px; border-radius:8px; border:1px solid rgba(0,207,232,0.3);">
+          </div>
+          <div style="background: rgba(0,207,232,0.1); padding:10px; border-radius:8px; border:1px solid rgba(0,207,232,0.2);">
+            <h3 style="margin-top:0; color:#00CFE8; font-size:1rem;">${name} 정보</h3>
+            <p>위치: (${obj.position.x.toFixed(2)}, ${obj.position.y.toFixed(2)}, ${obj.position.z.toFixed(2)})</p>
+            <p>상태: <strong>정상</strong></p>
+            <p>측정값: <strong>0.42 ppm</strong></p>
+          </div>
+        `;
+        popupTitle.textContent = name;
         document.getElementById('popup-content').innerHTML = html;
-        popup.style.left = event.offsetX + 10 + 'px';
-        popup.style.top = event.offsetY + 10 + 'px';
         popup.style.display = 'block';
+        popup.style.top = '10%';
+        popup.style.left = '50%';
+        popup.style.transform = 'translateX(-50%)';
+        popupLocked = false;
 
       } else {
         if (!popupLocked) popup.style.display = 'none';  // 잠금된 팝업은 닫히지 않음
@@ -759,30 +1059,33 @@
       if (intersects.length > 0) {
         if (INTERSECTED != intersects[0].object) {
           if (INTERSECTED) {
-            INTERSECTED.material.color.set(0xff0000); // 원래 색으로
+            INTERSECTED.material.color.set(0x00CFE8); // 원래 색으로
+            INTERSECTED.material.emissive.set(0x006774);
           }
           INTERSECTED = intersects[0].object;
           INTERSECTED.material.color.set(0xffff00); // hover 시 노란색
+          INTERSECTED.material.emissive.set(0x555500);
+          
+          // 마우스 오버 시 센서 정보 표시
+          document.getElementById('sensorInfo').textContent = `${INTERSECTED.userData.name} 위치: (${INTERSECTED.position.x.toFixed(2)}, ${INTERSECTED.position.y.toFixed(2)}, ${INTERSECTED.position.z.toFixed(2)})`;
         }
       } else {
         if (INTERSECTED) {
-          INTERSECTED.material.color.set(0xff0000);
+          INTERSECTED.material.color.set(0x00CFE8);
+          INTERSECTED.material.emissive.set(0x006774);
           INTERSECTED = null;
+          document.getElementById('sensorInfo').textContent = "센서를 클릭하면 정보가 표시됩니다.";
         }
       }
     });
 
-
-
+    // 센서 추가
     addLabeledCube(3.45, 1.11, -0.565, 'Sensor #1', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
     addLabeledCube(-0.507, 1.11, -0.565, 'Sensor #2', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
     addLabeledCube(-4.46, 1.11, -0.565, 'Sensor #3', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
     addLabeledCube(4.26, 1.11, 0.360, 'Sensor #4', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
     addLabeledCube(0.304, 1.11, 0.360, 'Sensor #5', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
     addLabeledCube(-3.65, 1.11, 0.360, 'Sensor #6', 1, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/images/test_image.png');
-
   </script>
-
 </body>
-
 </html>
