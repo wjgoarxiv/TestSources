@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 누출원 탐지 시스템</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: #E0E0E0;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .right-panel {
+      flex-grow: 1;
+      background: #1A1D2E;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ui-panel {
+      position: absolute;
+      background: rgba(26, 29, 46, 0.88);
+      backdrop-filter: blur(12px) saturate(190%);
+      -webkit-backdrop-filter: blur(12px) saturate(190%);
+      border: 1px solid rgba(0, 207, 232, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 207, 232, 0.2);
+      padding: 20px;
+      color: #E0E0E0;
+      z-index: 50;
+    }
+
+    #overlay-buttons {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #overlay-buttons button {
+      padding: 10px 15px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #00CFE8;
+      background: transparent;
+      border: 1px solid #00CFE8;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #overlay-buttons button:hover {
+      background: rgba(0, 207, 232, 0.1);
+      box-shadow: 0 0 15px rgba(0, 207, 232, 0.3);
+    }
+
+    #popup {
+      position: fixed;
+      display: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(26, 29, 46, 0.88);
+      backdrop-filter: blur(12px) saturate(190%);
+      -webkit-backdrop-filter: blur(12px) saturate(190%);
+      border: 1px solid rgba(0, 207, 232, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 207, 232, 0.2);
+      font-size: 14px;
+      z-index: 100;
+      width: 50vw;
+      min-width: 300px;
+      overflow: auto;
+      max-height: 80vh;
+    }
+
+    #popup-header {
+      cursor: move;
+      padding: 15px 20px;
+      border-bottom: 1px solid rgba(0, 207, 232, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 16px 16px 0 0;
+      color: #00CFE8;
+      font-weight: 600;
+    }
+
+    #popup-content {
+      width: 90%;
+      padding: 20px;
+      margin: 0 auto;
+    }
+
+    #closeButton {
+      background: transparent;
+      color: #00CFE8;
+      border: 1px solid #00CFE8;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+      line-height: 26px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #closeButton:hover {
+      background: rgba(0, 207, 232, 0.2);
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(0, 207, 232, 0.5);
+    }
+
+    #graphModal {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 700px;
+      height: auto;
+      max-height: 550px;
+      z-index: 110;
+      display: none;
+      flex-direction: column;
+    }
+
+    #graphModal h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #00CFE8;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #graphCanvasContainer {
+      width: 100%;
+      flex-grow: 1;
+      min-height: 300px;
+    }
+
+    #closeGraphButton {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      color: #00CFE8;
+      border: 1px solid #00CFE8;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      line-height: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #closeGraphButton:hover {
+      background: rgba(0, 207, 232, 0.2);
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(0, 207, 232, 0.5);
+    }
+
+    /* Sensor Labels */
+    .sensor-label {
+      color: #E0E0E0;
+      background-color: rgba(26, 29, 46, 0.7);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      position: absolute;
+      transform: translateX(-50%) translateY(-160%);
+      white-space: nowrap;
+      pointer-events: none;
+      border: 1px solid rgba(0, 207, 232, 0.3);
+      z-index: 1;
+    }
+
+    /* Neural network animation canvas */
+    #networkCanvas {
+      width: 100%;
+      height: 450px;
+      background-color: #0a0a14;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    /* Bloom effect for neon glowing */
+    .bloom {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      filter: blur(20px);
+      z-index: 1;
+    }
+
+    /* Controls for interactive chart */
+    .chart-controls {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+      gap: 12px;
+    }
+
+    .chart-controls button {
+      padding: 8px 15px;
+      background-color: rgba(0, 207, 232, 0.1);
+      border: 1px solid rgba(0, 207, 232, 0.5);
+      color: #00CFE8;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chart-controls button:hover {
+      background-color: rgba(0, 207, 232, 0.2);
+      box-shadow: 0 0 10px rgba(0, 207, 232, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="right-panel" id="viewer"></div>
+    <div class="bloom" id="bloomEffect"></div>
+  </div>
+
+  <div id="overlay-buttons">
+    <button onclick="LearningStart()">AI 학습</button>
+    <button onclick="DemoStart()">데모 시작</button>
+    <button onclick="LeakDetection()">AI 기반 누출 추정</button>
+    <button onclick="Dispersion()">암모니아 확산 양상</button>
+  </div>
+
+  <div id="popup" class="ui-panel">
+    <div id="popup-header">
+      <span id="popupTitle">시뮬레이션 정보</span>
+      <button id="closeButton" onclick="closePopup()">✖</button>
+    </div>
+    <div id="popup-content"></div>
+  </div>
+
+  <div id="graphModal" class="ui-panel">
+    <button id="closeGraphButton" onclick="closeGraphModal()">✖</button>
+    <h3 id="graphTitle">센서 시계열 데이터</h3>
+    <div id="graphCanvasContainer">
+      <canvas id="sensorChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+
+  <script>
+    let scene, camera, renderer, loader, controls, currentModel;
+    let composer, bloomPass; // For bloom effect
+    const popup = document.getElementById('popup');
+    const popupHeader = document.getElementById('popup-header');
+    const popupTitleElement = document.getElementById('popupTitle');
+    let popupLocked = true;  // 팝업 잠금 여부 (AI 학습 시 true)
+    
+    // Initialize raycaster and mouse for object interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    // Add global isPlaying variable
+    let isPlaying = true;
+
+    const closeGraphButton = document.getElementById('closeGraphButton');
+
+    function closePopup() {
+      if (leakTimer) { 
+          clearInterval(leakTimer);
+          leakTimer = null;
+      }
+      if (leakChart) { 
+          leakChart.destroy();
+          leakChart = null;
+      }
+      // Stop any animation loops
+      if (window.neuralNetAnimationId) {
+        cancelAnimationFrame(window.neuralNetAnimationId);
+        window.neuralNetAnimationId = null;
+      }
+      
+      // Make sure any displayed popup is hidden
+      popup.style.display = 'none';
+      popupLocked = false;
+    }
+
+    init();
+    loadModel('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/model_GE-v1.glb');
+
+    function init() {
+      const container = document.getElementById('viewer');
+      scene = new THREE.Scene();
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      scene.background = new THREE.Color(0x0A0A14); // Dark background for neon effect
+      container.appendChild(renderer.domElement);
+
+      const aspect = container.clientWidth / container.clientHeight;
+      const dist = 15;
+      camera = new THREE.OrthographicCamera(-dist * aspect, dist * aspect, dist, -dist, 0.1, 1000);
+      camera.position.set(0, 0, -dist);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0,0,0);
+      controls.update();
+
+      loader = new THREE.GLTFLoader();
+
+      // Enhanced lighting for neon effect
+      scene.add(new THREE.AmbientLight(0x101020, 0.5));
+      
+      // Add point lights for better neon effect
+      const pointLight1 = new THREE.PointLight(0x00FFFF, 1, 50);
+      pointLight1.position.set(10, 10, 10);
+      scene.add(pointLight1);
+      
+      const pointLight2 = new THREE.PointLight(0x00FFFF, 1, 50);
+      pointLight2.position.set(-10, -10, -10);
+      scene.add(pointLight2);
+
+      // Setup post-processing for bloom effect
+      setupBloom(container);
+      
+      animate();
+    }
+    
+    function setupBloom(container) {
+      // Create EffectComposer
+      composer = new THREE.EffectComposer(renderer);
+      
+      // Add RenderPass
+      const renderPass = new THREE.RenderPass(scene, camera);
+      composer.addPass(renderPass);
+      
+      // Add UnrealBloomPass for the glow effect
+      bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(container.clientWidth, container.clientHeight),
+        1.5,   // strength
+        0.4,   // radius
+        0.85   // threshold
+      );
+      composer.addPass(bloomPass);
+    }
+
+    function loadModel(path) {
+      if (currentModel) scene.remove(currentModel);
+      loader.load(path, function (gltf) {
+        currentModel = gltf.scene;
+        // Center and scale model
+        const box = new THREE.Box3().setFromObject(currentModel);
+        const center = box.getCenter(new THREE.Vector3());
+        currentModel.position.sub(center);
+        
+        // Apply emissive material to all meshes for neon effect
+        currentModel.traverse(function(child) {
+          if (child.isMesh) {
+            // Create new material with emissive properties
+            const newMaterial = new THREE.MeshStandardMaterial({
+              color: 0xFFFFFF,           // White base color
+              emissive: 0x00FFFF,        // Cyan emissive color
+              emissiveIntensity: 0.6,    // Intensity of the glow
+              metalness: 0.8,            // Metallic look
+              roughness: 0.2             // Smooth surface for better reflections
+            });
+            
+            // Apply new material
+            child.material = newMaterial;
+          }
+        });
+        
+        scene.add(currentModel);
+      }, undefined, function (error) {
+        console.error('모델 로드 실패:', error);
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      
+      // Use composer to render with bloom effect
+      composer.render();
+    }
+
+    // Neural Network Animation for AI Learning
+    function LearningStart() {
+      popupLocked = true;
+      popupTitleElement.textContent = "AI 학습 - 신경망 시각화";
+      
+      const html = `
+        <div style="text-align: center;">
+          <canvas id="networkCanvas"></canvas>
+          <p style="margin-top: 15px; font-size: 1.1em;">딥러닝 신경망 학습 진행 중...</p>
+          <p style="font-size: 0.9em; color: #bbb;">복잡한 다층 신경망 구조가 학습 데이터를 처리하고 있습니다.</p>
+        </div>
+      `;
+
+      document.getElementById('popup-content').innerHTML = html;
+      popup.style.width = '80vw';
+      popup.style.maxWidth = '900px';
+      popup.style.display = 'block';
+      
+      // After DOM update, initialize the canvas animation
+      setTimeout(initNeuralNetworkAnimation, 100);
+    }
+    
+    function initNeuralNetworkAnimation() {
+      const canvas = document.getElementById('networkCanvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      
+      // Neural network structure
+      const layers = [6, 12, 18, 12, 6, 1]; // Input, hidden layers, output
+      const neurons = [];
+      const connections = [];
+      
+      // Initialize neurons
+      const padding = 50;
+      const layerSpacing = (canvas.width - padding * 2) / (layers.length - 1);
+      
+      // Create neurons for each layer
+      layers.forEach((neuronCount, layerIndex) => {
+        const layerX = padding + layerIndex * layerSpacing;
+        const neuronSpacing = (canvas.height - padding * 2) / (neuronCount + 1);
+        
+        for (let i = 1; i <= neuronCount; i++) {
+          const neuronY = padding + i * neuronSpacing;
+          neurons.push({
+            x: layerX,
+            y: neuronY,
+            layer: layerIndex,
+            index: i,
+            radius: layerIndex === 0 || layerIndex === layers.length - 1 ? 8 : 6,
+            activation: Math.random(),
+            activationTarget: Math.random(),
+            speed: 0.01 + Math.random() * 0.03
+          });
+        }
+      });
+      
+      // Create connections between neurons
+      for (let l = 0; l < layers.length - 1; l++) {
+        const layerNeurons = neurons.filter(n => n.layer === l);
+        const nextLayerNeurons = neurons.filter(n => n.layer === l + 1);
+        
+        layerNeurons.forEach(from => {
+          nextLayerNeurons.forEach(to => {
+            connections.push({
+              from: from,
+              to: to,
+              weight: Math.random() * 2 - 1, // -1 to 1
+              signalPosition: 0,
+              signalSpeed: 0.01 + Math.random() * 0.02,
+              active: Math.random() > 0.7, // Some connections start active
+              signal: false
+            });
+          });
+        });
+      }
+      
+      // Animation function
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw connections
+        connections.forEach(conn => {
+          // Update connection activity randomly
+          if (Math.random() < 0.01) {
+            conn.active = Math.random() > 0.3;
+          }
+          
+          // Update signal positions
+          if (conn.active) {
+            conn.signalPosition += conn.signalSpeed;
+            if (conn.signalPosition > 1) {
+              conn.signalPosition = 0;
+              // Activate the target neuron
+              conn.to.activationTarget = Math.min(1, conn.to.activationTarget + 0.3);
+            }
+          }
+          
+          // Draw connection line
+          ctx.beginPath();
+          ctx.moveTo(conn.from.x, conn.from.y);
+          ctx.lineTo(conn.to.x, conn.to.y);
+          
+          // Line style based on weight and activity
+          const alpha = conn.active ? 0.3 : 0.05;
+          const r = conn.weight > 0 ? 0 : 255;
+          const g = conn.weight > 0 ? 255 : 0;
+          const b = 255;
+          
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          ctx.lineWidth = Math.abs(conn.weight) * 2;
+          ctx.stroke();
+          
+          // Draw signal if active
+          if (conn.active) {
+            const x = conn.from.x + (conn.to.x - conn.from.x) * conn.signalPosition;
+            const y = conn.from.y + (conn.to.y - conn.from.y) * conn.signalPosition;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 255, 255, 0.8)`;
+            ctx.fill();
+            
+            // Add glow effect to signal
+            const glow = ctx.createRadialGradient(x, y, 0, x, y, 12);
+            glow.addColorStop(0, 'rgba(0, 255, 255, 0.6)');
+            glow.addColorStop(1, 'rgba(0, 255, 255, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 12, 0, Math.PI * 2);
+            ctx.fillStyle = glow;
+            ctx.fill();
+          }
+        });
+        
+        // Draw neurons
+        neurons.forEach(neuron => {
+          // Update neuron activation
+          neuron.activation += (neuron.activationTarget - neuron.activation) * neuron.speed;
+          
+          // Randomly change activation target
+          if (Math.random() < 0.01) {
+            neuron.activationTarget = Math.random();
+          }
+          
+          // Draw neuron
+          ctx.beginPath();
+          ctx.arc(neuron.x, neuron.y, neuron.radius, 0, Math.PI * 2);
+          
+          // Fill style based on activation
+          const intensity = Math.floor(neuron.activation * 255);
+          ctx.fillStyle = `rgb(${intensity}, ${intensity}, 255)`;
+          ctx.fill();
+          
+          // Add glow effect
+          const glow = ctx.createRadialGradient(
+            neuron.x, neuron.y, neuron.radius,
+            neuron.x, neuron.y, neuron.radius * 3
+          );
+          glow.addColorStop(0, `rgba(0, 255, 255, ${neuron.activation * 0.8})`);
+          glow.addColorStop(1, 'rgba(0, 255, 255, 0)');
+          
+          ctx.beginPath();
+          ctx.arc(neuron.x, neuron.y, neuron.radius * 3, 0, Math.PI * 2);
+          ctx.fillStyle = glow;
+          ctx.fill();
+        });
+        
+        // Keep animation running
+        window.neuralNetAnimationId = requestAnimationFrame(animate);
+      }
+      
+      // Start animation
+      animate();
+    }
+
+    let leakChart;
+    let leakTimer;
+    let leakData = [];
+    let leakIndex = 0;
+
+    function DemoStart() {
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
+      leakData = [];
+      leakIndex = 0;
+      popupLocked = false;
+      isPlaying = true; // Ensure isPlaying is set to true
+      popupTitleElement.textContent = "데모 데이터 시각화";
+
+      const speedFactor = 5;
+
+      fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_7.csv')
+        .then(response => response.text())
+        .then(csvText => {
+          const lines = csvText.trim().split('\n');
+          const headerLineRaw = lines.shift();
+          const rawHeaders = headerLineRaw.split(',');
+          const cleanedHeaders = rawHeaders.map(h => {
+              const bracketEnd = h.indexOf(']');
+              return (bracketEnd !== -1 && bracketEnd + 1 < h.length) ? h.substring(bracketEnd + 1).trim() : h.trim();
+          });
+
+          const timeIdx = cleanedHeaders.indexOf('Time (sec)');
+          if (timeIdx === -1) {
+              throw new Error("'Time (sec)' column not found in CSV.");
+          }
+
+          const valueIndices = cleanedHeaders
+            .map((h, i) => ({ name: h, idx: i }))
+            .filter(obj => obj.idx !== timeIdx && obj.name.startsWith("Sensor #"));
+
+          for (let i = 0; i < lines.length; i++) {
+            const parts = lines[i].split(',');
+            const time = parseFloat(parts[timeIdx]);
+            const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
+            leakData.push({ x: time, yValues: values });
+          }
+
+          document.getElementById('popup-content').innerHTML = `<canvas id="leakChartCanvas" style="width: 100%; height: 400px;"></canvas>`;
+          popup.style.width = '70vw';
+          popup.style.maxWidth = '900px';
+          popup.style.display = 'block';
+
+          const ctx = document.getElementById('leakChartCanvas').getContext('2d');
+          leakChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: valueIndices.map((obj, index) => ({
+                label: obj.name,
+                data: [],
+                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+                backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
+                fill: false,
+                tension: 0.2
+              }))
+            },
+            options: {
+              animation: false,
+              scales: {
+                x: {
+                  type: 'linear',
+                  title: { display: true, text: 'Time [s]', color: '#E0E0E0' },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                },
+                y: {
+                  title: { display: true, text: 'NH3 [ppm]', color: '#E0E0E0' },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                }
+              },
+              plugins: {
+                legend: { labels: { color: '#E0E0E0' }}
+              },
+              responsive: true,
+              maintainAspectRatio: false
+            }
+          });
+
+          leakTimer = setInterval(() => {
+            if (isPlaying && leakIndex < leakData.length) {
+              const point = leakData[leakIndex];
+              point.yValues.forEach((val, idx) => {
+                if(leakChart.data.datasets[idx]) {
+                    leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                }
+              });
+              leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
+              leakChart.update();
+              leakIndex++;
+            } else {
+              clearInterval(leakTimer);
+            }
+          }, 1000 / speedFactor);
+        })
+        .catch(error => {
+          console.error("DemoStart CSV Error:", error);
+          document.getElementById('popup-content').innerHTML = `<p style="color:red;">데모 CSV 로드 실패: ${error.message}</p>`;
+          popup.style.display = 'block';
+        });
+    }
+
+    function LeakDetection() {
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
+      leakData = [];
+      leakIndex = 0;
+      popupLocked = false;
+      popupTitleElement.textContent = "AI 기반 누출 추정 - 센서 데이터";
+
+      const speedFactor = 5;
+
+      // Attempt to load from sensor_data/scenario_7-1.csv first, fallback to GitHub raw URL
+      fetch('./sensor_data/scenario_7-1.csv')
+        .then(response => {
+          if (!response.ok) {
+            // Fallback to GitHub URL if local file not found
+            throw new Error("Local file not found");
+          }
+          return response.text();
+        })
+        .catch(error => {
+          console.warn("Local file load failed, using GitHub fallback:", error);
+          return fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_7.csv').then(response => response.text());
+        })
+        .then(csvText => {
+          const lines = csvText.trim().split('\n');
+          const headerLineRaw = lines.shift();
+          if (!headerLineRaw) throw new Error("CSV file is empty or header is missing.");
+
+          const rawHeaders = headerLineRaw.split(',');
+          const cleanedHeaders = rawHeaders.map(h => {
+              const bracketEnd = h.indexOf(']');
+              return (bracketEnd !== -1 && bracketEnd + 1 < h.length) ? h.substring(bracketEnd + 1).trim() : h.trim();
+          });
+
+          const timeIdx = cleanedHeaders.indexOf('Time (sec)');
+          if (timeIdx === -1) {
+              console.error("'Time (sec)' column not found. Headers found:", cleanedHeaders);
+              throw new Error("'Time (sec)' column not found in CSV.");
+          }
+
+          const valueIndices = cleanedHeaders
+            .map((h, i) => ({ name: h, idx: i }))
+            .filter(obj => obj.idx !== timeIdx && obj.name.startsWith("Sensor #"));
+
+          if (valueIndices.length === 0) {
+              console.error("No 'Sensor #' columns found. Cleaned headers:", cleanedHeaders);
+              throw new Error("No 'Sensor #' columns found for plotting.");
+          }
+
+          for (let i = 0; i < lines.length; i++) {
+            const parts = lines[i].split(',');
+            if (parts.length <= Math.max(timeIdx, ...valueIndices.map(v => v.idx))) {
+                console.warn(`Skipping malformed CSV row: ${lines[i]}`);
+                continue;
+            }
+            const time = parseFloat(parts[timeIdx]);
+            const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
+            leakData.push({ x: time, yValues: values });
+          }
+
+          // Create HTML with chart and interactive controls
+          document.getElementById('popup-content').innerHTML = `
+            <canvas id="leakChartCanvas" style="width: 100%; height: 400px;"></canvas>
+            <div class="chart-controls">
+              <button id="playPauseBtn">⏸️ 일시정지</button>
+              <button id="resetBtn">⟲ 재시작</button>
+              <button id="speedUpBtn">⏩ 속도 증가</button>
+              <button id="speedDownBtn">⏪ 속도 감소</button>
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+              <h3 style="color: #00CFE8; margin-bottom: 10px;">누출원 위치 추정 결과</h3>
+              <div style="background: rgba(0, 207, 232, 0.1); padding: 10px; border-radius: 8px; display: inline-block;">
+                <span style="font-size: 1.2em; font-weight: bold;">예상 좌표: (4.7, 2.1, 0.5) ±0.2m</span>
+                <div style="margin-top: 5px;">신뢰도: <span style="color: #4ade80; font-weight: bold;">98.2%</span></div>
+              </div>
+            </div>
+          `;
+          
+          popup.style.width = '80vw';
+          popup.style.maxWidth = '1000px';
+          popup.style.display = 'block';
+
+          const ctx = document.getElementById('leakChartCanvas').getContext('2d');
+          leakChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: valueIndices.map((obj, index) => ({
+                label: obj.name,
+                data: [],
+                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+                backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: false,
+                tension: 0.2
+              }))
+            },
+            options: {
+              animation: false,
+              scales: {
+                x: {
+                  type: 'linear',
+                  title: { display: true, text: 'Time [s]', color: '#E0E0E0', font: { size: 14 } },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                },
+                y: {
+                  title: { display: true, text: 'Sensor Reading [ppm]', color: '#E0E0E0', font: { size: 14 } },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                }
+              },
+              plugins: {
+                legend: { 
+                  labels: { color: '#E0E0E0', font: { size: 12 } },
+                  position: 'top'
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(26, 29, 46, 0.9)',
+                  titleFont: { size: 14 },
+                  bodyFont: { size: 12 },
+                  borderColor: 'rgba(0, 207, 232, 0.3)',
+                  borderWidth: 1
+                }
+              },
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false
+              }
+            }
+          });
+
+          // Interactive controls functionality
+          let isPlaying = true;
+          let currentSpeed = speedFactor;
+          
+          document.getElementById('playPauseBtn').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? "⏸️ 일시정지" : "▶️ 재생";
+          });
+          
+          document.getElementById('resetBtn').addEventListener('click', function() {
+            leakIndex = 0;
+            leakChart.data.datasets.forEach(dataset => {
+              dataset.data = [];
+            });
+            leakChart.update();
+          });
+          
+          document.getElementById('speedUpBtn').addEventListener('click', function() {
+            currentSpeed = Math.min(currentSpeed * 1.5, 20);
+          });
+          
+          document.getElementById('speedDownBtn').addEventListener('click', function() {
+            currentSpeed = Math.max(currentSpeed / 1.5, 1);
+          });
+
+          leakTimer = setInterval(() => {
+            if (isPlaying && leakIndex < leakData.length) {
+              const point = leakData[leakIndex];
+              point.yValues.forEach((val, idx) => {
+                if(leakChart.data.datasets[idx]) {
+                    leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                }
+              });
+              leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
+              leakChart.update();
+              leakIndex++;
+            }
+          }, 1000 / currentSpeed);
+        })
+        .catch(error => {
+          console.error("LeakDetection CSV Error:", error);
+          document.getElementById('popup-content').innerHTML = `<p style="color:red;">AI 누출 추정 데이터 로드 실패: ${error.message}</p>`;
+          popup.style.display = 'block';
+        });
+    }
+
+    function Dispersion() {
+      // [1] 외부 박스 크기 정의
+      const boxWidth = 13.8;
+      const boxHeight = 21.5;
+      const boxDepth = 7.5;
+      const halfW = boxWidth / 2;
+      const halfH = boxHeight / 2;
+      const halfD = boxDepth / 2;
+
+      // [2] 외부 박스 그리기
+      const outerBox = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+      const outerEdges = new THREE.EdgesGeometry(outerBox);
+      const outerMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff }); // Changed to cyan for neon look
+      const outerWireframe = new THREE.LineSegments(outerEdges, outerMaterial);
+      scene.add(outerWireframe);
+
+      // [3] 내부 장애물 정의 (center + size)
+      const obstacles = [
+        { center: new THREE.Vector3(3.5, -1, 2), size: new THREE.Vector3(2, 10, 3) },
+        { center: new THREE.Vector3(-0.4, -1, 2), size: new THREE.Vector3(2, 10, 3) },
+        { center: new THREE.Vector3(-4.3, -1, 2), size: new THREE.Vector3(2, 10, 3) }
+      ];
+
+      // min/max 계산 및 시각화
+      obstacles.forEach(obs => {
+        const halfSize = obs.size.clone().multiplyScalar(0.5);
+        obs.min = obs.center.clone().sub(halfSize);
+        obs.max = obs.center.clone().add(halfSize);
+
+        const geom = new THREE.BoxGeometry(obs.size.x, obs.size.y, obs.size.z);
+        const edges = new THREE.EdgesGeometry(geom);
+        // Changed to cyan with glow material for neon effect
+        const mat = new THREE.LineBasicMaterial({ 
+          color: 0x00ffff,
+          transparent: true,
+          opacity: 0.8
+        });
+        const wire = new THREE.LineSegments(edges, mat);
+        wire.position.copy(obs.center);
+        scene.add(wire);
+      });
+
+      // 9개 그리드 정의 (3x3 → x,z 방향 분할)
+      // ✅ XY 평면상 그리드 설정
+      const gridCountX = 3;
+      const gridCountY = 3;
+      const gridWidth = boxWidth / gridCountX;
+      const gridHeight = boxHeight / gridCountY;
+
+      const gridPlanes = [];
+      for (let i = 0; i < gridCountX; i++) {
+        for (let j = 0; j < gridCountY; j++) {
+          // Enhanced material for neon glow effect
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.DoubleSide
+          });
+          const plane = new THREE.Mesh(
+            new THREE.PlaneGeometry(gridWidth, gridHeight),
+            material
+          );
+          plane.position.set(
+            -halfW + gridWidth * (i + 0.5),
+            -halfH + gridHeight * (j + 0.5),
+            -halfD + 0.01
+          );
+          scene.add(plane);
+          gridPlanes.push({ mesh: plane, count: 0 });
+        }
+      }
+      
+      // [4] 누출원 위치
+      const leakSource = new THREE.Vector3(4.8, 2.0, 0.4);
+
+      // Mark leak source with glowing sphere
+      const sourceMark = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 16, 16),
+        new THREE.MeshStandardMaterial({
+          color: 0xFF0000,
+          emissive: 0xFF5555,
+          emissiveIntensity: 1.5
+        })
+      );
+      sourceMark.position.copy(leakSource);
+      scene.add(sourceMark);
+
+      // [5] 파티클 설정 - Enhanced for neon effect
+      const particles = [];
+      const maxParticles = 1000;
+      const interval = 100;
+      const speed = 0.02;
+      const maxAge = 100.0;
+
+      function createParticle() {
+        const direction = new THREE.Vector3(
+          Math.random() * 2 - 1,
+          Math.random() * 2 - 1,
+          Math.random() * 2 - 1
+        ).normalize();
+
+        // Glowing material for particles
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xff5555,
+          transparent: true,
+          opacity: 0.8
+        });
+
+        const particle = new THREE.Mesh(
+          new THREE.SphereGeometry(0.1, 8, 8),
+          material
+        );
+        particle.position.copy(leakSource);
+        particle.userData = {
+          direction,
+          age: 0
+        };
+        scene.add(particle);
+        particles.push(particle);
+      }
+
+      setInterval(() => {
+        if (particles.length < maxParticles) createParticle();
+      }, interval);
+
+      function animateDispersion() {
+        requestAnimationFrame(animateDispersion);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          const delta = p.userData.direction.clone().multiplyScalar(speed);
+          const nextPos = p.position.clone().add(delta);
+
+          // [6-1] 외부 박스 반사
+          if (Math.abs(nextPos.x) > halfW) {
+            p.userData.direction.reflect(new THREE.Vector3(1, 0, 0));
+            p.position.x = Math.sign(p.position.x) * halfW;
+          }
+          if (Math.abs(nextPos.y) > halfH) {
+            p.userData.direction.reflect(new THREE.Vector3(0, 1, 0));
+            p.position.y = Math.sign(p.position.y) * halfH;
+          }
+          if (Math.abs(nextPos.z) > halfD) {
+            p.userData.direction.reflect(new THREE.Vector3(0, 0, 1));
+            p.position.z = Math.sign(p.position.z) * halfD;
+          }
+
+          // [6-2] 내부 장애물 반사
+          for (const obs of obstacles) {
+            if (
+              nextPos.x > obs.min.x && nextPos.x < obs.max.x &&
+              nextPos.y > obs.min.y && nextPos.y < obs.max.y &&
+              nextPos.z > obs.min.z && nextPos.z < obs.max.z
+            ) {
+              const entry = p.position;
+
+              const distToMin = entry.clone().sub(obs.min);
+              const distToMax = obs.max.clone().sub(entry);
+              const absMin = new THREE.Vector3(Math.abs(distToMin.x), Math.abs(distToMin.y), Math.abs(distToMin.z));
+              const absMax = new THREE.Vector3(Math.abs(distToMax.x), Math.abs(distToMax.y), Math.abs(distToMax.z));
+
+              const minDist = Math.min(
+                absMin.x, absMin.y, absMin.z,
+                absMax.x, absMax.y, absMax.z
+              );
+
+              let normal = new THREE.Vector3(0, 0, 0);
+              if (minDist === absMin.x) normal.set(-1, 0, 0);
+              else if (minDist === absMax.x) normal.set(1, 0, 0);
+              else if (minDist === absMin.y) normal.set(0, -1, 0);
+              else if (minDist === absMax.y) normal.set(0, 1, 0);
+              else if (minDist === absMin.z) normal.set(0, 0, -1);
+              else if (minDist === absMax.z) normal.set(0, 0, 1);
+
+              p.userData.direction.reflect(normal);
+            }
+          }
+
+          // 위치 이동
+          p.position.add(p.userData.direction.clone().multiplyScalar(speed));
+
+          // [7] 색상 및 투명도 변화 - Enhanced for neon effect
+          p.userData.age += speed * 5;
+          const t = Math.min(p.userData.age / maxAge, 1);
+          const r = 1;
+          const g = 0.4 + (t < 0.5 ? t : 0.5);
+          const b = 0.7 - t * 0.3;
+          const alpha = t < 0.5 ? 0.8 : 0.8 * (1 - (t - 0.5) * 2);
+
+          p.material.color.setRGB(r, g, b);
+          p.material.opacity = alpha;
+
+          // [8] 수명 초과 시 제거
+          if (p.userData.age > maxAge) {
+            scene.remove(p);
+            particles.splice(i, 1);
+          }
+
+          // 그리드별 입자 수 초기화
+          gridPlanes.forEach(g => g.count = 0);
+
+          // XY 평면 기준으로 입자 분포 카운팅
+          particles.forEach(p => {
+            const px = p.position.x + halfW;
+            const py = p.position.y + halfH;
+
+            const i = Math.floor(px / gridWidth);
+            const j = Math.floor(py / gridHeight);
+
+            if (i >= 0 && i < gridCountX && j >= 0 && j < gridCountY) {
+              const index = i * gridCountY + j;
+              gridPlanes[index].count++;
+            }
+          });
+
+          // 최댓값 계산
+          const counts = gridPlanes.map(g => g.count);
+          const maxCount = Math.max(...counts);
+          const minCount = Math.min(...counts);
+
+          // 색상 업데이트 - Enhanced for neon cyan to red gradient
+          gridPlanes.forEach(g => {
+            const t = maxCount > 0 ? (g.count - minCount) / (maxCount - minCount || 1) : 0;
+            const r_val = t;
+            const gVal = 0.8 - t * 0.5;
+            const bVal = 1 - t;
+            
+            g.mesh.material.color.setRGB(r_val, gVal, bVal);
+            g.mesh.material.opacity = 0.1 + t * 0.4; // More concentrated areas are more visible
+          });
+        }
+
+        composer.render(); // Use composer for bloom effect
+      }
+
+      animateDispersion();
+    }
+
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+    popupHeader.addEventListener('mousedown', (e) => {
+      if (e.target.id === 'closeButton') return;
+      isDragging = true;
+      const rect = popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      popup.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        popup.style.left = (e.clientX - offsetX) + 'px';
+        popup.style.top = (e.clientY - offsetY) + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        popup.style.userSelect = 'auto';
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      const container = document.getElementById('viewer');
+      if (camera && renderer && container) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        composer.setSize(container.clientWidth, container.clientHeight);
+      }
+    });
+
+    window.addEventListener('click', (event) => {
+      if (
+        event.target.closest('#popup') ||
+        event.target.closest('#overlay-buttons') ||
+        event.target.closest('#graphModal')
+      ) return;
+
+      if (!popupLocked && !event.target.closest('.ui-panel') && !event.target.closest('#overlay-buttons button')) {
+        closePopup();
+      }
+    });
+
+    // Create neon glowing sensor dots
+    function addLabeledSensor(x, y, z, name, size = 1) {
+      const geometry = new THREE.SphereGeometry(size * 0.5, 16, 16);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x00FFFF,           // Cyan base color
+        emissive: 0x00FFFF,        // Cyan emissive color
+        emissiveIntensity: 0.8,    // Intensity of the glow
+        transparent: true,
+        opacity: 0.9
+      });
+      
+      const sensor = new THREE.Mesh(geometry, material);
+      sensor.position.set(x, y, z);
+      sensor.userData.name = name;
+      scene.add(sensor);
+      
+      // Add a small pulsing light at sensor position
+      const light = new THREE.PointLight(0x00FFFF, 1, 3);
+      light.position.set(x, y, z);
+      scene.add(light);
+      
+      // Animate the light intensity for pulsing effect
+      const pulseSpeed = 0.5 + Math.random() * 0.5;
+      
+      setInterval(() => {
+        light.intensity = 0.7 + Math.sin(Date.now() * 0.003 * pulseSpeed) * 0.3;
+      }, 50);
+    }
+
+    // Add sensors with neon effect
+    addLabeledSensor(3.45, 1.11, -0.565, 'Sensor #1', 0.8);
+    addLabeledSensor(-0.507, 1.11, -0.565, 'Sensor #2', 0.8);
+    addLabeledSensor(-4.46, 1.11, -0.565, 'Sensor #3', 0.8);
+    addLabeledSensor(4.26, 1.11, 0.360, 'Sensor #4', 0.8);
+    addLabeledSensor(0.304, 1.11, 0.360, 'Sensor #5', 0.8);
+    addLabeledSensor(-3.65, 1.11, 0.360, 'Sensor #6', 0.8);
+    
+    // Function to add leak points with neon glow effect
+    function addLeakPoint(x, y, z, name, size = 0.3) {
+      const geometry = new THREE.SphereGeometry(size, 16, 16);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xFF3030,           // Red base color
+        emissive: 0xFF5050,        // Red emissive color
+        emissiveIntensity: 1.0,    // Intensity of the glow
+        transparent: true,
+        opacity: 0.8
+      });
+      
+      const sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(x, y, z);
+      sphere.userData.name = name;
+      sphere.userData.leakNumber = parseInt(name.split('#')[1]);
+      scene.add(sphere);
+      
+      // Add to clickable objects
+      if (!window.clickableCubes) window.clickableCubes = [];
+      window.clickableCubes.push(sphere);
+      
+      // Create text label with canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 128;
+      canvas.height = 64;
+      ctx.font = '32px Arial';
+      ctx.fillStyle = '#FF6060';
+      ctx.textAlign = 'center';
+      ctx.fillText(name, 64, 40);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ 
+        map: texture,
+        transparent: true
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(2, 1, 1);
+      sprite.position.set(x, y + size * 1.5, z);
+      scene.add(sprite);
+      
+      // Add a pulsing point light for enhanced glow
+      const light = new THREE.PointLight(0xFF3030, 1, 2);
+      light.position.set(x, y, z);
+      scene.add(light);
+      
+      // Animate the light intensity for pulsing effect
+      const pulseSpeed = 0.3 + Math.random() * 0.3;
+      
+      setInterval(() => {
+        light.intensity = 0.5 + Math.sin(Date.now() * 0.002 * pulseSpeed) * 0.5;
+      }, 50);
+    }
+    
+    // Add leak points
+    addLeakPoint(3.0, 3.0, -1.0, 'Leak #1');
+    addLeakPoint(-0.9, 3.0, -1.0, 'Leak #2');
+    addLeakPoint(-4.8, 3.0, -1.0, 'Leak #3');
+    addLeakPoint(4.5, -1.5, 2.0, 'Leak #4');
+    addLeakPoint(0.6, -1.5, 2.0, 'Leak #5');
+    addLeakPoint(-3.3, -1.5, 2.0, 'Leak #6');
+    addLeakPoint(4.5, 0.0, 2.0, 'Leak #7');
+    
+    // Function to load and display scenario data when leak point is clicked
+    function displayScenarioData(leakNumber) {
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
+      leakData = [];
+      leakIndex = 0;
+      popupLocked = false;
+      popupTitleElement.textContent = `Leak #${leakNumber} 시나리오 데이터`;
+      
+      const csvFilePath = `./sensor_data/scenario_${leakNumber}-1.csv`;
+      
+      // Attempt to load local file, fallback to GitHub if needed
+      fetch(csvFilePath)
+        .then(response => {
+          if (!response.ok) {
+            // Fallback to GitHub repository or sample data
+            console.warn(`Local file ${csvFilePath} not found, using fallback data`);
+            return fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_7.csv');
+          }
+          return response;
+        })
+        .then(response => response.text())
+        .then(csvText => {
+          const lines = csvText.trim().split('\n');
+          const headerLineRaw = lines.shift();
+          if (!headerLineRaw) throw new Error("CSV file is empty or header is missing.");
+          
+          const rawHeaders = headerLineRaw.split(',');
+          const cleanedHeaders = rawHeaders.map(h => {
+              const bracketEnd = h.indexOf(']');
+              return (bracketEnd !== -1 && bracketEnd + 1 < h.length) ? h.substring(bracketEnd + 1).trim() : h.trim();
+          });
+          
+          const timeIdx = cleanedHeaders.indexOf('Time (sec)');
+          if (timeIdx === -1) {
+              console.error("'Time (sec)' column not found. Headers found:", cleanedHeaders);
+              throw new Error("'Time (sec)' column not found in CSV.");
+          }
+          
+          const valueIndices = cleanedHeaders
+            .map((h, i) => ({ name: h, idx: i }))
+            .filter(obj => obj.idx !== timeIdx && obj.name.startsWith("Sensor #"));
+          
+          if (valueIndices.length === 0) {
+              console.error("No 'Sensor #' columns found. Cleaned headers:", cleanedHeaders);
+              throw new Error("No 'Sensor #' columns found for plotting.");
+          }
+          
+          for (let i = 0; i < lines.length; i++) {
+            const parts = lines[i].split(',');
+            if (parts.length <= Math.max(timeIdx, ...valueIndices.map(v => v.idx))) {
+                console.warn(`Skipping malformed CSV row: ${lines[i]}`);
+                continue;
+            }
+            const time = parseFloat(parts[timeIdx]);
+            const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
+            leakData.push({ x: time, yValues: values });
+          }
+          
+          // Create HTML with chart and interactive controls
+          document.getElementById('popup-content').innerHTML = `
+            <canvas id="leakChartCanvas" style="width: 100%; height: 400px;"></canvas>
+            <div class="chart-controls">
+              <button id="playPauseBtn">⏸️ 일시정지</button>
+              <button id="resetBtn">⟲ 재시작</button>
+              <button id="speedUpBtn">⏩ 속도 증가</button>
+              <button id="speedDownBtn">⏪ 속도 감소</button>
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+              <h3 style="color: #00CFE8; margin-bottom: 10px;">Leak #${leakNumber} 시나리오</h3>
+              <div style="background: rgba(0, 207, 232, 0.1); padding: 10px; border-radius: 8px; display: inline-block;">
+                <span style="font-size: 1.2em; font-weight: bold;">누출원 좌표 정보</span>
+                <div style="margin-top: 5px;">센서 반응도: <span style="color: #FF5050; font-weight: bold;">높음</span></div>
+              </div>
+            </div>
+          `;
+          
+          popup.style.width = '80vw';
+          popup.style.maxWidth = '1000px';
+          popup.style.display = 'block';
+          
+          const ctx = document.getElementById('leakChartCanvas').getContext('2d');
+          leakChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: valueIndices.map((obj, index) => ({
+                label: obj.name,
+                data: [],
+                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+                backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: false,
+                tension: 0.2
+              }))
+            },
+            options: {
+              animation: false,
+              scales: {
+                x: {
+                  type: 'linear',
+                  title: { display: true, text: 'Time [s]', color: '#E0E0E0', font: { size: 14 } },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                },
+                y: {
+                  title: { display: true, text: 'Sensor Reading [ppm]', color: '#E0E0E0', font: { size: 14 } },
+                  min: 0,
+                  ticks: { color: '#E0E0E0' },
+                  grid: { color: 'rgba(224,224,224,0.1)'}
+                }
+              },
+              plugins: {
+                legend: { 
+                  labels: { color: '#E0E0E0', font: { size: 12 } },
+                  position: 'top'
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(26, 29, 46, 0.9)',
+                  titleFont: { size: 14 },
+                  bodyFont: { size: 12 },
+                  borderColor: 'rgba(0, 207, 232, 0.3)',
+                  borderWidth: 1
+                }
+              },
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: 'index',
+                intersect: false
+              }
+            }
+          });
+          
+          // Interactive controls functionality
+          let isPlaying = true;
+          let currentSpeed = 5; // Default speed factor
+          
+          document.getElementById('playPauseBtn').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? "⏸️ 일시정지" : "▶️ 재생";
+          });
+          
+          document.getElementById('resetBtn').addEventListener('click', function() {
+            leakIndex = 0;
+            leakChart.data.datasets.forEach(dataset => {
+              dataset.data = [];
+            });
+            leakChart.update();
+          });
+          
+          document.getElementById('speedUpBtn').addEventListener('click', function() {
+            currentSpeed = Math.min(currentSpeed * 1.5, 20);
+          });
+          
+          document.getElementById('speedDownBtn').addEventListener('click', function() {
+            currentSpeed = Math.max(currentSpeed / 1.5, 1);
+          });
+          
+          leakTimer = setInterval(() => {
+            if (isPlaying && leakIndex < leakData.length) {
+              const point = leakData[leakIndex];
+              point.yValues.forEach((val, idx) => {
+                if(leakChart.data.datasets[idx]) {
+                    leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                }
+              });
+              leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
+              leakChart.update();
+              leakIndex++;
+            }
+          }, 1000 / currentSpeed);
+        })
+        .catch(error => {
+          console.error(`Error loading scenario data for Leak #${leakNumber}:`, error);
+          document.getElementById('popup-content').innerHTML = `
+            <p style="color:red;">데이터 로드 실패: ${error.message}</p>
+            <p>파일 경로: ${csvFilePath}</p>
+          `;
+          popup.style.display = 'block';
+        });
+    }
+    
+    // Modify click event to handle leak points
+    window.addEventListener('click', (event) => {
+      if (
+        event.target.closest('#popup') ||
+        event.target.closest('#overlay-buttons') ||
+        event.target.closest('#graphModal')
+      ) return;
+
+      if (!popupLocked && !event.target.closest('.ui-panel') && !event.target.closest('#overlay-buttons button')) {
+        closePopup();
+        return;
+      }
+      
+      // Check if clicked on a leak point
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(window.clickableCubes || []);
+      
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        if (obj.userData.leakNumber) {
+          displayScenarioData(obj.userData.leakNumber);
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
