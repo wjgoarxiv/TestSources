@@ -286,7 +286,7 @@
       const speedFactor = 5; // ✅ n배 빠르게 (예: 5배 빠르게)
 
       
-      fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_detection.csv') 
+      fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leakDetection.csv') 
         .then(response => response.text())
         .then(csvText => {
           const lines = csvText.trim().split('\n');
@@ -821,7 +821,7 @@
                       title: { display: true, text: 'Time [s]' }
                     },
                     y: {
-                      title: { display: true, text: 'Value' }
+                      title: { display: true, text: 'NH3 [ppm]' }
                     }
                   },
                   responsive: true,
