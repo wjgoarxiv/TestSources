@@ -3,12 +3,18 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>GLTF Viewer UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 누출원 탐지 시스템</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       overflow: hidden;
+      background-color: #f0f2f5;
+      color: #333333;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
     }
 
     .container {
@@ -18,7 +24,7 @@
 
     .right-panel {
       flex-grow: 1;
-      background: #f0f0f0;
+      background: #ffffff;
       position: relative;
     }
 
@@ -36,55 +42,369 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      max-width: 200px;
     }
 
     #overlay-buttons button {
-      padding: 8px 12px;
-      font-size: 14px;
-      background-color: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 5px;
+      padding: 10px 15px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #007bff;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #007bff;
+      border-radius: 8px;
       cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      min-width: 120px;
+    }
+
+    #overlay-buttons button:hover {
+      background: rgba(0, 123, 255, 0.1);
+      box-shadow: 0 0 12px rgba(0, 123, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    #leak-buttons {
+      position: absolute;
+      top: 220px; /* Positioned below overlay buttons */
+      left: 20px; /* Aligned with overlay buttons */
+      z-index: 10000;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-width: 250px;
+    }
+
+    #leak-buttons button {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #dc3545;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #dc3545;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #leak-buttons button:hover {
+      background: rgba(220, 53, 69, 0.1);
+      box-shadow: 0 0 10px rgba(220, 53, 69, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Modern Toggle Switch */
+    .toggle-container {
+      position: absolute;
+      top: 310px; /* Positioned below leak buttons */
+      left: 20px; /* Aligned with overlay buttons */
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px 15px;
+      border-radius: 25px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+      background: #dee2e6;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-switch.active {
+      background: #007bff;
+    }
+
+    /* Guide Button */
+    #guide-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      width: 85px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #007bff;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
       font-weight: bold;
+      color: #007bff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    #guide-button:hover {
+      background: rgba(0, 123, 255, 0.1);
+      box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+      transform: translateY(-1px) scale(1.05);
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(26px);
     }
 
     #popup {
       position: fixed;
-      display: none;
-
-      top: 10%;
-      left: 40%;
-      /*
-      top: 100px;
-      left: 200px;
-      */
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-      font-size: 14px;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(248, 249, 250, 0.95);
+      backdrop-filter: blur(10px) saturate(180%);
+      -webkit-backdrop-filter: blur(10px) saturate(180%);
+      border: 1px solid rgba(108, 117, 125, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      font-size: 13px;
       z-index: 9999;
-      width: 25vw;       /* 고정 너비 */
-      min-width: 250px;
-      overflow: auto;      /* 내용이 넘치면 스크롤 */
-      max-height: 80vh;     /* 화면 높이의 최대 80% */
+      width: 450px;
+      max-width: 90vw;
+      height: 350px;
+      max-height: 70vh;
+      overflow: hidden;
+      box-sizing: border-box;
+      
+      /* Animation properties */
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.5s cubic-bezier(0.86,0,0.07,1);
+    }
+
+    #popup.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Sensor status indicator animation */
+    .sensor-status-indicator {
+      animation: sensorPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes sensorPulse {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+        box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.3);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(52, 199, 89, 0);
+      }
     }
 
     #popup-header {
       cursor: move;
-      background: #f0f0f0;
-      padding: 5px 10px;
-      border-bottom: 1px solid #ccc;
+      padding: 10px 15px;
+      border-bottom: 1px solid rgba(108, 117, 125, 0.2);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-radius: 5px 5px 0 0;
+      border-radius: 12px 12px 0 0;
+      color: #007bff;
+      font-weight: 600;
+      font-size: 0.95em;
+      height: 40px;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
 
     #popup-content {
-      width: 90%;
-      padding: 10px;
+      width: 100%;
+      padding: 15px;
+      margin: 0;
+      height: calc(100% - 40px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      color: #343a40;
+      box-sizing: border-box;
+    }
+
+    #popup-content canvas {
+      max-width: 100%;
+      max-height: 100%;
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 123, 255, 0.1);
+    }
+
+    #closeButton {
+      background: transparent;
+      color: #007bff;
+      border: 1px solid #007bff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+      line-height: 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #closeButton:hover {
+      background: rgba(0, 123, 255, 0.1);
+      color: #0056b3;
+    }
+
+    /* Neural network animation canvas */
+    #networkCanvas {
+      width: 100%;
+      height: 450px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      margin-top: 10px;
+      border: 1px solid #dee2e6;
+      cursor: grab;
+      transition: all 0.3s ease;
+    }
+
+    #networkCanvas:active {
+      cursor: grabbing;
+    }
+
+    .network-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .network-controls button {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .network-controls button:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    /* Sensor Labels */
+    .sensor-label {
+      color: #495057;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      position: absolute;
+      transform: translateX(-50%) translateY(-160%);
+      white-space: nowrap;
+      pointer-events: none;
+      border: 1px solid rgba(0, 123, 255, 0.3);
+      z-index: 1;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+      #overlay-buttons {
+        top: 10px;
+        left: 10px;
+        gap: 8px;
+        max-width: 180px;
+      }
+
+      #overlay-buttons button {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        min-width: 100px;
+      }
+
+      #leak-buttons {
+        top: 180px; /* Adjusted for mobile */
+        left: 10px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        max-width: 180px;
+      }
+
+      #leak-buttons button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+
+      #toggle-labels-btn {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+
+      #popup {
+        width: 95vw;
+        height: 60vh;
+        bottom: 10px;
+        right: 10px;
+      }
+
+      .sensor-label {
+        font-size: 10px;
+        padding: 3px 6px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #leak-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 150px;
+      }
+
+      #leak-buttons button {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+      }
+
+      #popup {
+        width: 98vw;
+        height: 70vh;
+        bottom: 5px;
+        right: 5px;
+      }
     }
   </style>
 </head>
@@ -96,16 +416,35 @@
   </div>
 
   <div id="overlay-buttons">
-    <button onclick="LearningStart()">AI 학습</button>
-    <button onclick="DemoStart()">데모 시작</button>
-    <button onclick="LeakDetection()">AI 기반 누출 추정</button>
-    <button onclick="Dispersion()">암모니아 확산 양상</button>
+    <button onclick="LearningStart()">🤖 AI 신경망 학습</button>
+    <button onclick="LeakDetection()">🔍 AI 기반 누출 탐지</button>
+    <button onclick="Dispersion()">🌊 암모니아 확산 양상</button>
+  </div>
+
+  <div id="guide-button" onclick="toggleGuide()" title="사용법 가이드">
+    💡 가이드
+  </div>
+
+  <div id="leak-buttons">
+    <button onclick="showLeakData(1)">Leak #1</button>
+    <button onclick="showLeakData(2)">Leak #2</button>
+    <button onclick="showLeakData(3)">Leak #3</button>
+    <button onclick="showLeakData(4)">Leak #4</button>
+    <button onclick="showLeakData(5)">Leak #5</button>
+    <button onclick="showLeakData(6)">Leak #6</button>
+  </div>
+
+  <div class="toggle-container">
+    <span class="toggle-label">Labels</span>
+    <div class="toggle-switch active" id="toggle-switch" onclick="toggleLabels()">
+      <div class="toggle-slider"></div>
+    </div>
   </div>
 
   <div id="popup">
     <div id="popup-header">
-      <span><strong>정보</strong></span>
-      <button onclick="popup.style.display='none'; popupLocked=true;">✖</button>
+      <span id="popupTitle">정보</span>
+      <button id="closeButton" onclick="closePopup()">✖</button>
     </div>
     <div id="popup-content"></div>
   </div>
@@ -119,38 +458,134 @@
     let scene, camera, renderer, loader, controls, currentModel;
     const popup = document.getElementById('popup');
     const popupHeader = document.getElementById('popup-header');
-    let popupLocked = true;  // 팝업 잠금 여부 (AI 학습 시 true)
+    const popupTitleElement = document.getElementById('popupTitle');
+    let popupLocked = true;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let INTERSECTED = null;
+
+    if (!window.clickableCubes) window.clickableCubes = [];
+    
+    const sensorLabels = [];
+    const sensorObjects = {};
+    let labelsVisible = true;
+
+    let leakChart;
+    let leakTimer;
+    let leakData = [];
+    let leakIndex = 0;
+    const CHART_SPEED_FACTOR = 25; // Increased speed factor
+
+    // Stored chart data for reopening popups
+    const storedChartData = {};
+
+    // Toggle states for different functions
+    const toggleStates = {
+      guide: false,
+      learning: false,
+      detection: false,
+      dispersion: false,
+      leak1: false,
+      leak2: false,
+      leak3: false,
+      leak4: false,
+      leak5: false,
+      leak6: false
+    };
+
+    // Neural network variables
+    let networkScale = 1;
+    let networkCanvas = null;
+    let networkCtx = null;
+    
+    // Dispersion variables
+    let dispersionGroup = new THREE.Group();
+    let isDispersionActive = false;
 
     init();
     loadModel('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/model_GE-v1.glb');
 
-
     function init() {
       const container = document.getElementById('viewer');
       scene = new THREE.Scene();
+      scene.add(dispersionGroup);
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(container.clientWidth, container.clientHeight);
-      scene.background = null;
+      scene.background = new THREE.Color(0xddeeff);
       container.appendChild(renderer.domElement);
 
       const aspect = container.clientWidth / container.clientHeight;
       const dist = 15;
       camera = new THREE.OrthographicCamera(-dist * aspect, dist * aspect, dist, -dist, 0.1, 1000);
-      camera.position.set(0, 0, -dist);
+      camera.position.set(20, 0, 0); // Changed from (20, 20, 20) to view from yz plane
+      camera.lookAt(0, 0, 0);
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 0, 0);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.screenSpacePanning = false;
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.maxPolarAngle = Math.PI / 1.5;
+      controls.update();
+
       loader = new THREE.GLTFLoader();
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(5, 10, 7.5);
-      scene.add(dirLight);
+      scene.add(new THREE.AmbientLight(0x777777, 0.5));
+      
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      directionalLight.position.set(8, 15, 10);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
 
+      const keyLight = new THREE.PointLight(0xffffff, 0.3, 150);
+      keyLight.position.set(-15, 20, 15);
+      scene.add(keyLight);
+
+      const fillLight = new THREE.PointLight(0xaaaaff, 0.15, 100);
+      fillLight.position.set(15, 5, -15);
+      scene.add(fillLight);
+      
+      // Add sensors and leak points
+      addLabeledSensor(3.45, 1.11, -0.565, 'Sensor #1', 0.5);
+      addLabeledSensor(-0.507, 1.11, -0.565, 'Sensor #2', 0.5);
+      addLabeledSensor(-4.46, 1.11, -0.565, 'Sensor #3', 0.5);
+      addLabeledSensor(4.26, 1.11, 0.360, 'Sensor #4', 0.5);
+      addLabeledSensor(0.304, 1.11, 0.360, 'Sensor #5', 0.5);
+      addLabeledSensor(-3.65, 1.11, 0.360, 'Sensor #6', 0.5);
+      
+      addLeakPoint(3.0, 3.0, -1.0, 'Leak #1', 0.2);
+      addLeakPoint(-0.9, 3.0, -1.0, 'Leak #2', 0.2);
+      addLeakPoint(-4.8, 3.0, -1.0, 'Leak #3', 0.2);
+      addLeakPoint(4.5, -1.5, 2.0, 'Leak #4', 0.2);
+      addLeakPoint(0.6, -1.5, 2.0, 'Leak #5', 0.2);
+      addLeakPoint(-3.3, -1.5, 2.0, 'Leak #6', 0.2);
+      addLeakPoint(4.5, 0.0, 2.0, 'Leak #7', 0.2);
+      
       animate();
+      setupEventListeners();
     }
 
     function loadModel(path) {
-      if (currentModel) scene.remove(currentModel);
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel.traverse(child => {
+          if (child.isMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => mat.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          }
+        });
+        currentModel = null;
+      }
+
       loader.load(path, function (gltf) {
         currentModel = gltf.scene;
         scene.add(currentModel);
@@ -162,353 +597,867 @@
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
+      updateSensorLabels();
       renderer.render(scene, camera);
     }
 
-    // 장비 상태 정육면체 생성 함수
-    function addStatusCubeAt(x, y, z) {
-      const geometry = new THREE.BoxGeometry(2, 10, 3);
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x00ff00,
-        transparent: true,
-        opacity: 0.5, // 0 = 완전 투명, 1 = 불투명
-      });
-      const cube = new THREE.Mesh(geometry, material);
-      cube.position.set(x, y, z);
-      scene.add(cube);
-    }
-
-    const clickableCubes = [];
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    let INTERSECTED = null;
-
-    const sensorCubeColor = 0xff0000;
-    const leakSphereColor = 0x00ff00;
-
-    ////////////////////
-    let isRed = null;
-    let isGreen = null;
-    ////////////////////
-
-    // 라벨 큐브 생성
-    function addLabeledCube(x, y, z, name, size = 1, imagePath = null) {
+    // Enhanced sensor creation with better styling
+    function addLabeledSensor(x, y, z, name, size = 0.5) {
       const geometry = new THREE.BoxGeometry(size, size, size);
       const material = new THREE.MeshStandardMaterial({
-        color: sensorCubeColor,
+        color: 0x007bff,
+        emissive: 0x004499,
+        emissiveIntensity: 0.2,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.7
       });
-      const cube = new THREE.Mesh(geometry, material);
-      cube.userData.originalColor = sensorCubeColor;
-      cube.position.set(x, y, z);
-      cube.userData.name = name;
-      cube.userData.image = imagePath;
-      scene.add(cube);
-      clickableCubes.push(cube);
 
-      // 라벨
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.font = '40px Arial';
-      ctx.fillStyle = 'red';
-      ctx.fillText(name, 10, 50);
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(5, 2.5, 1);
-      sprite.position.set(x, y + size, z);
-      scene.add(sprite);
+      const sensor = new THREE.Mesh(geometry, material);
+      sensor.position.set(x, y, z);
+      sensor.userData.name = name;
+      sensor.userData.originalColor = 0x007bff;
+      sensor.userData.type = 'sensor';
+      sensor.userData.position = { x, y, z };
+      sensor.userData.specifications = {
+        model: 'NH₃-SENSOR-V2.1',
+        range: '0-100 ppm',
+        accuracy: '±2% F.S.',
+        response: '< 30 seconds',
+        power: '12-24V DC'
+      };
+      scene.add(sensor);
+      sensorObjects[name] = sensor;
+      window.clickableCubes.push(sensor);
+
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'sensor-label';
+      labelDiv.textContent = name;
+      labelDiv.style.cursor = 'pointer';
+      labelDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showSensorInfo(sensor);
+      });
+      document.body.appendChild(labelDiv);
+      sensorLabels.push({mesh: sensor, div: labelDiv});
     }
-    // 텍스트 흐릿하게 나오는 현상 처리 필요 (참고: https://namocom.tistory.com/191)
 
-    // 누출원 포인트 생성 
-    function addLeakPoint(x, y, z, name, size = 1, imagePath = null) {
-      const geometry = new THREE.SphereGeometry(size);
+    // Enhanced leak point creation
+    function addLeakPoint(x, y, z, name, size = 0.2) {
+      const geometry = new THREE.SphereGeometry(size, 16, 16);
       const material = new THREE.MeshStandardMaterial({
-        color: leakSphereColor,
+        color: 0xdc3545,
+        emissive: 0xaa2230,
+        emissiveIntensity: 0.4,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.85
       });
+
       const sphere = new THREE.Mesh(geometry, material);
-      sphere.userData.originalColor = leakSphereColor;
       sphere.position.set(x, y, z);
       sphere.userData.name = name;
-      sphere.userData.image = imagePath;
+      sphere.userData.leakNumber = parseInt(name.split('#')[1]);
+      sphere.userData.originalColor = 0xdc3545;
+      sphere.userData.type = 'leak';
       scene.add(sphere);
-      clickableCubes.push(sphere);
 
-      // 라벨
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.font = '40px Arial';
-      ctx.fillStyle = 'red';
-      ctx.fillText(name, 10, 50);
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(5, 2.5, 1);
-      sprite.position.set(x, y + size, z);
-      scene.add(sprite);
+      window.clickableCubes.push(sphere);
+
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'sensor-label';
+      labelDiv.textContent = name;
+      labelDiv.style.color = '#dc3545';
+      labelDiv.style.borderColor = 'rgba(220, 53, 69, 0.4)';
+      labelDiv.style.cursor = 'pointer';
+      labelDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showLeakData(sphere.userData.leakNumber);
+      });
+      document.body.appendChild(labelDiv);
+      sensorLabels.push({mesh: sphere, div: labelDiv});
     }
 
+    function updateSensorLabels() {
+      sensorLabels.forEach(({mesh, div}) => {
+        if (!labelsVisible) {
+          div.style.display = 'none';
+          return;
+        }
 
+        div.style.display = 'block';
+        const vector = mesh.position.clone();
+        vector.project(camera);
+
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+
+        // Hide labels that are behind the camera or too far
+        if (vector.z > 1 || vector.z < -1) {
+          div.style.display = 'none';
+        }
+      });
+    }
+
+    function toggleLabels() {
+      labelsVisible = !labelsVisible;
+      const toggleSwitch = document.getElementById('toggle-switch');
+      if (labelsVisible) {
+        toggleSwitch.classList.add('active');
+      } else {
+        toggleSwitch.classList.remove('active');
+      }
+      updateSensorLabels();
+    }
+
+    // AI Learning with interactive neural network visualization
     function LearningStart() {
-      popupLocked = true;  // AI 학습에서 생성된 팝업은 고정
-      const name = "AI 학습";
-      const imgPath = "images/demo_image.png";
-
+      if (toggleStates.learning) {
+        closePopup();
+        toggleStates.learning = false;
+        return;
+      }
+      
+      // Reset other toggles
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
+      toggleStates.learning = true;
+      
+      popupLocked = true;
+      popupTitleElement.textContent = "AI 학습 - 신경망 시각화";
+      
       const html = `
-      <strong>${name}</strong><br>
-      <img src="${imgPath}" alt="${name}" style="width:100%; max-height:300px; object-fit:contain; margin-top:5px;"><br>
-      <p style="margin-top: 5px;">AI 학습 시작 화면입니다.</p>
-    `;
+        <div style="text-align: center; padding: 10px;">
+          <canvas id="networkCanvas" style="width: 100%; height: 400px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6; cursor: grab; position: relative;"></canvas>
+          <div style="margin-top: 15px; padding: 10px; background: rgba(0, 123, 255, 0.1); border-radius: 8px;">
+            <p style="margin: 5px 0; font-size: 1.1em; color: #333; font-weight: 600;">딥러닝 신경망 학습 진행 중...</p>
+            <p style="margin: 5px 0; font-size: 0.9em; color: #555;">복잡한 다층 신경망 구조가 학습 데이터를 처리하고 있습니다.</p>
+            <p style="margin: 5px 0; font-size: 0.8em; color: #777;">마우스 휠로 확대/축소, 드래그로 이동 가능</p>
+          </div>
+        </div>
+      `;
 
       document.getElementById('popup-content').innerHTML = html;
+      popup.style.width = '45vw';
+      popup.style.maxWidth = '500px';
+      popup.style.height = '90vh';
+      popup.style.maxHeight = '800px';
+      popup.style.bottom = 'auto';
+      popup.style.right = 'auto';
+      popup.style.top = '50%';
+      popup.style.left = '50%';
+      popup.style.transform = 'translate(-50%, -50%)';
       
-      popup.style.top = '10%';
-      popup.style.left = '40%';
-      popup.style.display = 'block';
-
+      // Show popup with animation
+      popup.classList.add('show');
+      
+      setTimeout(initNeuralNetworkAnimation, 100);
     }
 
-    let leakChart;             // Chart.js 인스턴스
-    let leakTimer;             // setInterval 타이머
-    let leakData = [];         // 전체 데이터 배열
-    let leakIndex = 0;         // 현재 시점 인덱스
+    function adjustNetworkScale(factor) {
+      networkScale *= factor;
+      networkScale = Math.max(0.3, Math.min(3, networkScale));
+    }
 
-    function DemoStart() {
-      clearInterval(leakTimer);  // 이전 실행 중지
-      leakChart?.destroy();      // 기존 그래프 제거
+    function resetNetworkScale() {
+      networkScale = 1;
+    }
+
+    function initNeuralNetworkAnimation() {
+      networkCanvas = document.getElementById('networkCanvas');
+      if (!networkCanvas) return;
+      
+      networkCtx = networkCanvas.getContext('2d');
+      networkCanvas.width = networkCanvas.clientWidth;
+      networkCanvas.height = networkCanvas.clientHeight;
+      
+      const layers = [3, 6, 18, 18, 6, 3];
+      let neurons = [];
+      let connections = [];
+      
+      let offsetX = 0, offsetY = 0;
+      let isDragging = false;
+      
+      // Add Reset View button to canvas
+      const canvasContainer = networkCanvas.parentElement;
+      const resetButton = document.createElement('button');
+      resetButton.innerHTML = 'Reset View';
+      resetButton.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.3s ease;
+      `;
+      resetButton.onmouseover = function() { this.style.background = '#0056b3'; };
+      resetButton.onmouseout = function() { this.style.background = '#007bff'; };
+      resetButton.onclick = function() {
+        networkScale = 1;
+        offsetX = 0;
+        offsetY = 0;
+      };
+      canvasContainer.style.position = 'relative';
+      canvasContainer.appendChild(resetButton);
+      
+      // Interactive controls
+      networkCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+        adjustNetworkScale(factor);
+      });
+      
+      networkCanvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        const rect = networkCanvas.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+      
+      networkCanvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = networkCanvas.getBoundingClientRect();
+        const deltaX = (e.clientX - rect.left) - offsetX;
+        const deltaY = (e.clientY - rect.top) - offsetY;
+        // Apply drag offset
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+      
+      networkCanvas.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+      
+      function initializeNetwork() {
+        neurons = [];
+        connections = [];
+        
+        const padding = Math.min(networkCanvas.width, networkCanvas.height) * 0.1;
+        const layerSpacing = (networkCanvas.width - padding * 2) / (layers.length - 1);
+        
+        // Create neurons
+        layers.forEach((neuronCount, layerIndex) => {
+          const layerX = padding + layerIndex * layerSpacing;
+          const neuronSpacing = (networkCanvas.height - padding * 2) / (neuronCount + 1);
+          
+          for (let i = 1; i <= neuronCount; i++) {
+            const neuronY = padding + i * neuronSpacing;
+            neurons.push({
+              baseX: layerX,
+              baseY: neuronY,
+              x: layerX,
+              y: neuronY,
+              layer: layerIndex,
+              index: i,
+              baseRadius: Math.min(networkCanvas.width, networkCanvas.height) * 0.01,
+              radius: Math.min(networkCanvas.width, networkCanvas.height) * 0.01,
+              activation: Math.random(),
+              activationTarget: Math.random(),
+              speed: 0.01 + Math.random() * 0.03
+            });
+          }
+        });
+        
+        // Create connections
+        for (let l = 0; l < layers.length - 1; l++) {
+          const layerNeurons = neurons.filter(n => n.layer === l);
+          const nextLayerNeurons = neurons.filter(n => n.layer === l + 1);
+          
+          layerNeurons.forEach(from => {
+            nextLayerNeurons.forEach(to => {
+              connections.push({
+                from: from,
+                to: to,
+                weight: Math.random() * 2 - 1,
+                signalPosition: 0,
+                signalSpeed: 0.01 + Math.random() * 0.02,
+                active: Math.random() > 0.7,
+                signal: false
+              });
+            });
+          });
+        }
+      }
+      
+      function updateNetworkScale() {
+        const centerX = networkCanvas.width / 2;
+        const centerY = networkCanvas.height / 2;
+        
+        neurons.forEach(neuron => {
+          // Scale position relative to center
+          neuron.x = centerX + (neuron.baseX - centerX) * networkScale + offsetX;
+          neuron.y = centerY + (neuron.baseY - centerY) * networkScale + offsetY;
+          neuron.radius = Math.max(2, neuron.baseRadius * networkScale);
+        });
+      }
+      
+      initializeNetwork();
+      
+      function animateNetwork() {
+        updateNetworkScale();
+        
+        networkCtx.clearRect(0, 0, networkCanvas.width, networkCanvas.height);
+        
+        // Draw connections with proper scaling
+        connections.forEach(conn => {
+          if (Math.random() < 0.01) conn.active = Math.random() > 0.3;
+          
+          if (conn.active) {
+            conn.signalPosition += conn.signalSpeed;
+            if (conn.signalPosition > 1) {
+              conn.signalPosition = 0;
+              conn.to.activationTarget = Math.min(1, conn.to.activationTarget + 0.3);
+            }
+          }
+          
+          networkCtx.beginPath();
+          networkCtx.moveTo(conn.from.x, conn.from.y);
+          networkCtx.lineTo(conn.to.x, conn.to.y);
+          
+          const alpha = conn.active ? 0.3 : 0.05;
+          const weight = Math.abs(conn.weight);
+          const color = conn.weight > 0 ? `rgba(0, 123, 255, ${alpha})` : `rgba(220, 53, 69, ${alpha})`;
+          
+          networkCtx.strokeStyle = color;
+          networkCtx.lineWidth = Math.max(0.5, weight * 2 * networkScale);
+          networkCtx.stroke();
+          
+          // Enhanced signal visualization with scaling
+          if (conn.active) {
+            const x = conn.from.x + (conn.to.x - conn.from.x) * conn.signalPosition;
+            const y = conn.from.y + (conn.to.y - conn.from.y) * conn.signalPosition;
+            
+            const gradient = networkCtx.createRadialGradient(x, y, 0, x, y, 4 * networkScale);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gradient.addColorStop(0.5, 'rgba(0, 123, 255, 0.7)');
+            gradient.addColorStop(1, 'rgba(0, 123, 255, 0)');
+            
+            networkCtx.beginPath();
+            networkCtx.arc(x, y, 4 * networkScale, 0, Math.PI * 2);
+            networkCtx.fillStyle = gradient;
+            networkCtx.fill();
+          }
+        });
+        
+        // Draw neurons with proper scaling
+        neurons.forEach(neuron => {
+          neuron.activation += (neuron.activationTarget - neuron.activation) * neuron.speed;
+          if (Math.random() < 0.01) neuron.activationTarget = Math.random();
+          
+          // Outer glow
+          const glowGradient = networkCtx.createRadialGradient(
+            neuron.x, neuron.y, 0,
+            neuron.x, neuron.y, neuron.radius * 2
+          );
+          glowGradient.addColorStop(0, `rgba(0, 123, 255, ${neuron.activation * 0.3})`);
+          glowGradient.addColorStop(1, 'rgba(0, 123, 255, 0)');
+          
+          networkCtx.beginPath();
+          networkCtx.arc(neuron.x, neuron.y, neuron.radius * 2, 0, Math.PI * 2);
+          networkCtx.fillStyle = glowGradient;
+          networkCtx.fill();
+          
+          // Main neuron
+          const gradient = networkCtx.createRadialGradient(
+            neuron.x - neuron.radius * 0.3, neuron.y - neuron.radius * 0.3, 0,
+            neuron.x, neuron.y, neuron.radius
+          );
+          
+          const intensity = Math.floor(neuron.activation * 150) + 105;
+          gradient.addColorStop(0, `rgb(${Math.min(255, intensity + 50)}, ${Math.min(255, intensity + 30)}, 255)`);
+          gradient.addColorStop(1, `rgb(${Math.max(50, intensity - 20)}, ${Math.max(30, intensity - 40)}, ${Math.max(200, intensity + 20)})`);
+          
+          networkCtx.beginPath();
+          networkCtx.arc(neuron.x, neuron.y, neuron.radius, 0, Math.PI * 2);
+          networkCtx.fillStyle = gradient;
+          networkCtx.fill();
+          
+          // Border
+          networkCtx.strokeStyle = `rgba(0, 80, 160, 0.8)`;
+          networkCtx.lineWidth = 1 * networkScale;
+          networkCtx.stroke();
+        });
+        
+        window.neuralNetAnimationId = requestAnimationFrame(animateNetwork);
+      }
+      
+      animateNetwork();
+    }
+
+    // Show leak data for specific leak numbers
+    function showLeakData(leakNumber) {
+      const leakKey = `leak${leakNumber}`;
+      
+      if (toggleStates[leakKey]) {
+        closePopup();
+        toggleStates[leakKey] = false;
+        return;
+      }
+      
+      // Reset other toggles
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
+      toggleStates[leakKey] = true;
+      
+      const chartKey = `leak_${leakNumber}`;
+      
+      // For rapid clicking between different leaks, always reload the data
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
       leakData = [];
       leakIndex = 0;
 
-      const speedFactor = 5; // ✅ n배 빠르게 (예: 5배 빠르게)
+      popupLocked = false;
+      popupTitleElement.textContent = `Leak #${leakNumber} - 센서 데이터`;
 
-      
-      fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leak_7.csv') 
-        .then(response => response.text())
-        .then(csvText => {
-          const lines = csvText.trim().split('\n');
-          const headers = lines[0].split(',');
-          const timeIdx = headers.indexOf('Time (sec)');
+      const csvPath = `./sensor_data/scenario_${leakNumber}-1.csv`;
+      const backupPath = `https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_${leakNumber}-1.csv`;
 
-          // value 컬럼 인덱스들 (value1, value2, ...)
-          const valueIndices = headers
-            .map((h, i) => ({ name: h.trim(), idx: i }))
-            .filter(obj => obj.name !== 'Time (sec)');
-
-          for (let i = 1; i < lines.length; i++) {
-            const parts = lines[i].split(',');
-            const time = parseFloat(parts[timeIdx]);
-            const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
-            leakData.push({ x: time, yValues: values });
+      fetch(csvPath)
+        .then(response => {
+          if (!response.ok) {
+            console.warn(`로컬 파일 로드 실패, 백업 사용: ${backupPath}`);
+            return fetch(backupPath);
           }
-
-          document.getElementById('popup-content').innerHTML = `<canvas id="leakChart" width="100%" height="100%"></canvas>`;
-          //popup.style.top = '10%';
-          //popup.style.left = '20%';
-          popup.style.display = 'block';
-
-          const ctx = document.getElementById('leakChart').getContext('2d');
-          leakChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              datasets: valueIndices.map((obj, index) => ({
-                label: obj.name,
-                data: [],
-                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-                backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
-                fill: false,
-                tension: 0.2
-              }))
-            },
-            options: {
-              animation: false,
-              scales: {
-                x: {
-                  type: 'linear',
-                  title: { display: true, text: 'Time [s]' },
-                  min: 0,
-                  //max: 10
-                },
-                y: {
-                  title: { display: true, text: 'NH3 [ppm]' },
-                  min: 0,
-                  //max: 100
-                }
-              },
-              responsive: true,
-              maintainAspectRatio: false
-            }
-          });
-
-          // 1초 간격으로 값 추가
-          leakTimer = setInterval(() => {
-            if (leakIndex < leakData.length) {
-              const point = leakData[leakIndex];
-              point.yValues.forEach((val, idx) => {
-                leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
-              });
-              // 👉 x축 max 값을 현재 시간 + 1로 실시간 업데이트
-              leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
-              leakChart.update();
-              leakIndex++;
-            } else {
-              clearInterval(leakTimer); // 종료
-            }
-          }, 1000 / speedFactor);
+          return response;
+        })
+        .catch(() => {
+          console.warn(`로컬 파일 접근 실패, 백업 사용: ${backupPath}`);
+          return fetch(backupPath);
+        })
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.text();
+        })
+        .then(csvText => {
+          processLeakCSVData(csvText, chartKey, leakNumber);
         })
         .catch(error => {
           document.getElementById('popup-content').innerHTML = `<p style="color:red;">CSV 로드 실패: ${error}</p>`;
-          popup.style.display = 'block';
+          showChartPopup();
         });
-
     }
 
+    function processLeakCSVData(csvText, chartKey, leakNumber) {
+      const lines = csvText.trim().split('\n');
+      const headers = lines[0].split(',');
+      const timeIdx = headers.indexOf('Time (sec)');
 
+      if (timeIdx === -1) {
+        throw new Error("'Time (sec)' 컬럼을 찾을 수 없습니다.");
+      }
+
+      const valueIndices = headers
+        .map((h, i) => ({ name: h.trim(), idx: i }))
+        .filter(obj => obj.name !== 'Time (sec)');
+
+      leakData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        const time = parseFloat(parts[timeIdx]);
+        const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
+        leakData.push({ x: time, yValues: values });
+      }
+
+      // Store the data for later use
+      storedChartData[chartKey] = {
+        data: leakData,
+        valueIndices: valueIndices,
+        leakNumber: leakNumber
+      };
+
+      createLeakChart(valueIndices, leakNumber);
+      showChartPopup();
+      startLeakAnimation();
+    }
+
+    function createLeakChart(valueIndices, leakNumber) {
+      document.getElementById('popup-content').innerHTML = `
+        <div style="width: 100%; height: 100%; padding: 5px; box-sizing: border-box;">
+          <canvas id="leakChart" style="width: 100%; height: 100%; max-width: 100%; max-height: 100%;"></canvas>
+        </div>
+      `;
+      
+      const ctx = document.getElementById('leakChart').getContext('2d');
+      
+      // Apple-inspired color palette
+      const colors = [
+        { border: '#007AFF', bg: 'rgba(0, 122, 255, 0.1)' },    // Blue
+        { border: '#34C759', bg: 'rgba(52, 199, 89, 0.1)' },     // Green  
+        { border: '#FF9500', bg: 'rgba(255, 149, 0, 0.1)' },     // Orange
+        { border: '#FF3B30', bg: 'rgba(255, 59, 48, 0.1)' },     // Red
+        { border: '#AF52DE', bg: 'rgba(175, 82, 222, 0.1)' },    // Purple
+        { border: '#5856D6', bg: 'rgba(88, 86, 214, 0.1)' }      // Indigo
+      ];
+      
+      leakChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: valueIndices.map((obj, index) => ({
+            label: obj.name,
+            data: [],
+            borderColor: colors[index % colors.length].border,
+            backgroundColor: colors[index % colors.length].bg,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: colors[index % colors.length].border,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          }))
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          },
+          layout: {
+            padding: {
+              top: 5,
+              bottom: 5,
+              left: 5,
+              right: 5
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              align: 'start',
+              labels: {
+                usePointStyle: true,
+                padding: 8,
+                boxWidth: 8,
+                boxHeight: 8,
+                font: {
+                  family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  size: 10,
+                  weight: '500'
+                },
+                color: '#1d1d1f'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: true,
+              titleFont: {
+                family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                size: 11,
+                weight: '600'
+              },
+              bodyFont: {
+                family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                size: 10
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Time (s)',
+                font: {
+                  family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  size: 11,
+                  weight: '600'
+                },
+                color: '#1d1d1f'
+              },
+              min: 0,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.06)',
+                lineWidth: 1
+              },
+              ticks: {
+                font: {
+                  family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  size: 9
+                },
+                color: '#6e6e73'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'NH₃ Concentration (ppm)',
+                font: {
+                  family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  size: 11,
+                  weight: '600'
+                },
+                color: '#1d1d1f'
+              },
+              min: 0,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.06)',
+                lineWidth: 1
+              },
+              ticks: {
+                font: {
+                  family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  size: 9
+                },
+                color: '#6e6e73'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function startLeakAnimation() {
+      leakIndex = 0;
+      leakTimer = setInterval(() => {
+        if (leakIndex < leakData.length) {
+          const point = leakData[leakIndex];
+          point.yValues.forEach((val, idx) => {
+            leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+          });
+          leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
+          leakChart.update();
+          leakIndex++;
+        } else {
+          clearInterval(leakTimer);
+        }
+      }, 1000 / CHART_SPEED_FACTOR);
+    }
+
+    function showChartPopup() {
+      popup.style.width = '450px';
+      popup.style.height = '350px';
+      popup.style.bottom = '20px';
+      popup.style.right = '20px';
+      popup.style.top = 'auto';
+      popup.style.left = 'auto';
+      popup.style.transform = 'none';
+      
+      // Show popup with animation
+      popup.classList.add('show');
+    }
+
+    // AI-based leak detection (using scenario 7 data)
     function LeakDetection() {
-      clearInterval(leakTimer);
-      leakChart?.destroy();
+      if (toggleStates.detection) {
+        closePopup();
+        toggleStates.detection = false;
+        return;
+      }
+      
+      // Reset other toggles
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
+      toggleStates.detection = true;
+      
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
       leakData = [];
       leakIndex = 0;
 
-      const speedFactor = 5;  // n배 빠르게
+      popupLocked = false;
+      popupTitleElement.textContent = "AI 기반 누출 추정 - Leak #7";
 
-      // 기존 큐브 찾기 또는 새로 생성
-      let statusCube1;
-      let statusCube2;
-      let statusCube3;
-      /*
-      const existing = scene.children.find(obj => obj.name === 'statusCube');
-      if (existing) {
-        statusCube = existing;
-      } else {
-        const geometry = new THREE.BoxGeometry(2, 10, 3);
-        const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
-        statusCube = new THREE.Mesh(geometry, material);
-        statusCube.position.set(3.5, -1, 2);
-        statusCube.name = 'statusCube';
-        scene.add(statusCube);
-      }
-      */
+      // Remove existing status cubes
+      ['GE#1', 'GE#2', 'GE#3'].forEach(cubeName => {
+        const existingCube = scene.getObjectByName(cubeName);
+        if (existingCube) {
+          scene.remove(existingCube);
+          if (existingCube.geometry) existingCube.geometry.dispose();
+          if (existingCube.material) existingCube.material.dispose();
+        }
+      });
+
+      // Create status cubes with wireframe
       const geometry = new THREE.BoxGeometry(2, 10, 3);
+      
+      const statusCube1 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
+      const statusCube2 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
+      const statusCube3 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
 
-      statusCube1 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
-      statusCube2 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
-      statusCube3 = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 }));
+      // Add wireframes
+      const edges1 = new THREE.EdgesGeometry(geometry);
+      const edges2 = new THREE.EdgesGeometry(geometry);
+      const edges3 = new THREE.EdgesGeometry(geometry);
+      
+      const wireframe1 = new THREE.LineSegments(edges1, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
+      const wireframe2 = new THREE.LineSegments(edges2, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
+      const wireframe3 = new THREE.LineSegments(edges3, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
 
       statusCube1.position.set(3.5, -1, 2);
       statusCube2.position.set(-0.4, -1, 2);
       statusCube3.position.set(-4.3, -1, 2);
 
+      wireframe1.position.set(3.5, -1, 2);
+      wireframe2.position.set(-0.4, -1, 2);
+      wireframe3.position.set(-4.3, -1, 2);
+
       statusCube1.name = 'GE#1';
       statusCube2.name = 'GE#2';
       statusCube3.name = 'GE#3';
+      
+      wireframe1.name = 'GE#1_wire';
+      wireframe2.name = 'GE#2_wire';
+      wireframe3.name = 'GE#3_wire';
 
       scene.add(statusCube1);
       scene.add(statusCube2);
       scene.add(statusCube3);
+      scene.add(wireframe1);
+      scene.add(wireframe2);
+      scene.add(wireframe3);
 
-      fetch('https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/leakDetection.csv') 
-        .then(response => response.text())
+      const csvPath = './sensor_data/scenario_7-1.csv';
+      const backupPath = 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_7-1.csv';
+
+      fetch(csvPath)
+        .then(response => {
+          if (!response.ok) {
+            return fetch(backupPath);
+          }
+          return response;
+        })
+        .catch(() => fetch(backupPath))
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.text();
+        })
         .then(csvText => {
-          const lines = csvText.trim().split('\n');
-          const headers = lines[0].split(',');
-          const timeIdx = headers.indexOf('Time (sec)');
+          const lines = csvText.trim().split('\n').filter(line => line.trim() !== '');
+          const headers = lines[0].split(',').map(h => h.trim());
+          const timeIdx = headers.findIndex(h => h.toLowerCase().includes('time'));
 
-          // value 컬럼 인덱스들 (value1, value2, ...)
+          if (timeIdx === -1) {
+            throw new Error("시간 컬럼을 찾을 수 없습니다.");
+          }
+
           const valueIndices = headers
             .map((h, i) => ({ name: h.trim(), idx: i }))
-            .filter(obj => obj.name !== 'Time (sec)');
+            .filter(obj => !obj.name.toLowerCase().includes('time') && obj.name !== '');
 
+          if (valueIndices.length === 0) {
+            throw new Error("센서 데이터 컬럼을 찾을 수 없습니다.");
+          }
+
+          leakData = [];
           for (let i = 1; i < lines.length; i++) {
-            const parts = lines[i].split(',');
+            const parts = lines[i].split(',').map(p => p.trim());
+            if (parts.length !== headers.length) continue; // Skip malformed rows
+            
             const time = parseFloat(parts[timeIdx]);
-            const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
+            if (isNaN(time)) continue; // Skip invalid time values
+            
+            const values = valueIndices.map(obj => {
+              const val = parseFloat(parts[obj.idx]);
+              return isNaN(val) ? 0 : val; // Default to 0 for invalid values
+            });
+            
             leakData.push({ x: time, yValues: values });
           }
 
-          document.getElementById('popup-content').innerHTML = `<canvas id="leakChart" width="600" height="600"></canvas>`;
-          popup.style.top = '10%';
-          popup.style.left = '40%';
-          popup.style.display = 'block';
+          if (leakData.length === 0) {
+            throw new Error("유효한 데이터가 없습니다.");
+          }
 
-          const ctx = document.getElementById('leakChart').getContext('2d');
-          leakChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              datasets: valueIndices.map((obj, index) => ({
-                label: obj.name,
-                data: [],
-                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-                backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
-                fill: false,
-                tension: 0.2
-              }))
-            },
-            options: {
-              animation: false,
-              scales: {
-                x: {
-                  type: 'linear',
-                  title: { display: true, text: 'Time [s]' },
-                  min: 0,
-                  //max: 10
-                },
-                y: {
-                  title: { display: true, text: 'NH3 [ppm]' },
-                  min: 0,
-                  //max: 100
-                }
-              },
-              responsive: true,
-              maintainAspectRatio: false
-            }
-          });
+          console.log(`LeakDetection: 로드된 데이터 포인트 수: ${leakData.length}, 최대 시간: ${leakData[leakData.length - 1].x}초`);
+          
+          createLeakChart(valueIndices, 7);
+          showChartPopup();
 
-          // 1초 간격으로 값 추가
+          leakIndex = 0;
           leakTimer = setInterval(() => {
             if (leakIndex < leakData.length) {
               const point = leakData[leakIndex];
               point.yValues.forEach((val, idx) => {
-                leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                if (idx < leakChart.data.datasets.length) {
+                  leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
+                }
               });
-              // 👉 x축 max 값을 현재 시간 + 1로 실시간 업데이트
               leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
 
-              // 동적으로 큐브 색상 업데이트
-              const red1 = Math.floor(point.yValues[0] * 255);
-              const green1 = Math.floor((1 - point.yValues[0]) * 255);
-              statusCube1.material.color.setRGB(red1 / 255, green1 / 255, 0);
+              // Find the highest sensor value and corresponding cube
+              if (point.yValues.length >= 3) {
+                const maxValue = Math.max(...point.yValues);
+                const maxIndex = point.yValues.indexOf(maxValue);
+                
+                // Reset all cubes to green first
+                [statusCube1, statusCube2, statusCube3].forEach((cube, idx) => {
+                  if (cube && cube.material) {
+                    cube.material.color.setRGB(0, 1, 0);
+                  }
+                  const wire = scene.getObjectByName(`GE#${idx + 1}_wire`);
+                  if (wire && wire.material) wire.material.color.setRGB(0, 1, 0);
+                });
+                
+                // Only highlight the cube with highest sensor reading
+                const cubes = [statusCube1, statusCube2, statusCube3];
+                const redIntensity = Math.min(1, maxValue * 2); // Scale the red intensity
+                const greenIntensity = Math.max(0, 1 - redIntensity);
+                
+                if (cubes[maxIndex] && cubes[maxIndex].material) {
+                  cubes[maxIndex].material.color.setRGB(redIntensity, greenIntensity, 0);
+                }
+                const wire = scene.getObjectByName(`GE#${maxIndex + 1}_wire`);
+                if (wire && wire.material) wire.material.color.setRGB(redIntensity, greenIntensity, 0);
+              }
 
-              const red2 = Math.floor(point.yValues[1] * 255);
-              const green2 = Math.floor((1 - point.yValues[1]) * 255);
-              statusCube2.material.color.setRGB(red2 / 255, green2 / 255, 0);
-
-              const red3 = Math.floor(point.yValues[2] * 255);
-              const green3 = Math.floor((1 - point.yValues[2]) * 255);
-              statusCube3.material.color.setRGB(red3 / 255, green3 / 255, 0);
-
-              console.log(point.yValues[0]);
               leakChart.update();
               leakIndex++;
             } else {
-              clearInterval(leakTimer); // 종료
+              console.log("LeakDetection: 모든 데이터 처리 완료");
+              clearInterval(leakTimer);
             }
-          }, 1000 / speedFactor);
+          }, 1000 / CHART_SPEED_FACTOR);
         })
         .catch(error => {
-          document.getElementById('popup-content').innerHTML = `<p style="color:red;">CSV 로드 실패: ${error}</p>`;
-          popup.style.display = 'block';
+          console.error('LeakDetection CSV 로드 실패:', error);
+          document.getElementById('popup-content').innerHTML = `
+            <div style="padding: 20px; text-align: center;">
+              <p style="color:red; font-weight: bold;">CSV 로드 실패</p>
+              <p style="color:#666; font-size: 0.9em;">${error.message}</p>
+              <p style="color:#666; font-size: 0.8em;">경로: ${csvPath}</p>
+              <p style="color:#666; font-size: 0.8em;">백업: ${backupPath}</p>
+            </div>
+          `;
+          showChartPopup();
         });
     }
 
-
+    // Ammonia dispersion simulation with enhanced physics
     function Dispersion() {
-
-
-      // [1] 외부 박스 크기 정의
+      if (toggleStates.dispersion) {
+        closePopup();
+        toggleStates.dispersion = false;
+        return;
+      }
+      
+      // Reset other toggles
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
+      toggleStates.dispersion = true;
+      
+      // Clear any existing animations and dispersion objects
+      if (leakTimer) clearInterval(leakTimer);
+      if (leakChart) leakChart.destroy();
+      if (window.dispersionInterval) clearInterval(window.dispersionInterval);
+      if (window.dispersionAnimationId) cancelAnimationFrame(window.dispersionAnimationId);
+      
+      // Clear existing dispersion objects
+      dispersionGroup.clear();
+      
+      // External box dimensions
       const boxWidth = 13.8;
       const boxHeight = 21.5;
       const boxDepth = 7.5;
@@ -516,21 +1465,20 @@
       const halfH = boxHeight / 2;
       const halfD = boxDepth / 2;
 
-      // [2] 외부 박스 그리기
+      // Draw external box
       const outerBox = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
       const outerEdges = new THREE.EdgesGeometry(outerBox);
-      const outerMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const outerMaterial = new THREE.LineBasicMaterial({ color: 0x333333 });
       const outerWireframe = new THREE.LineSegments(outerEdges, outerMaterial);
-      scene.add(outerWireframe);
+      dispersionGroup.add(outerWireframe);
 
-      // [3] 내부 장애물 정의 (center + size)
+      // Internal obstacles with enhanced physics properties
       const obstacles = [
         { center: new THREE.Vector3(3.5, -1, 2), size: new THREE.Vector3(2, 10, 3) },
         { center: new THREE.Vector3(-0.4, -1, 2), size: new THREE.Vector3(2, 10, 3) },
         { center: new THREE.Vector3(-4.3, -1, 2), size: new THREE.Vector3(2, 10, 3) }
       ];
 
-      // min/max 계산 및 시각화
       obstacles.forEach(obs => {
         const halfSize = obs.size.clone().multiplyScalar(0.5);
         obs.min = obs.center.clone().sub(halfSize);
@@ -538,379 +1486,687 @@
 
         const geom = new THREE.BoxGeometry(obs.size.x, obs.size.y, obs.size.z);
         const edges = new THREE.EdgesGeometry(geom);
-        const mat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        const mat = new THREE.LineBasicMaterial({ color: 0x666666 });
         const wire = new THREE.LineSegments(edges, mat);
-        wire.position.copy(obs.center); // 중심 좌표 기준 위치
-        scene.add(wire);
+        wire.position.copy(obs.center);
+        dispersionGroup.add(wire);
       });
 
-      // 9개 그리드 정의 (3x3 → x,z 방향 분할)
-      // ✅ XY 평면상 그리드 설정
-      const gridCountX = 3;
-      const gridCountY = 3;
+      // Create 3D volume visualization (4×4 grid with full Z-axis height per section)
+      const gridCountX = 4;
+      const gridCountY = 4;
       const gridWidth = boxWidth / gridCountX;
       const gridHeight = boxHeight / gridCountY;
 
       const gridPlanes = [];
       for (let i = 0; i < gridCountX; i++) {
         for (let j = 0; j < gridCountY; j++) {
+          // Use BoxGeometry for proper 3D volume representation
+          const geometry = new THREE.BoxGeometry(
+            gridWidth * 0.95, 
+            gridHeight * 0.95, 
+            boxDepth * 0.95
+          );
           const material = new THREE.MeshBasicMaterial({
             color: 0x00ff00,
             transparent: true,
-            opacity: 0.2,
+            opacity: 0.0,
             side: THREE.DoubleSide
           });
-          const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(gridWidth, gridHeight),
-            material
-          );
-          // XY 평면 → 회전 없음
-          plane.position.set(
+          const volumeBox = new THREE.Mesh(geometry, material);
+          
+          // Position volume box at the center of the grid cell
+          volumeBox.position.set(
             -halfW + gridWidth * (i + 0.5),
             -halfH + gridHeight * (j + 0.5),
-            -halfD + 0.01  // XY 평면에 z 고정
+            0 // Centered in Z-axis
           );
-          scene.add(plane);
-          gridPlanes.push({ mesh: plane, count: 0 });
+          
+          dispersionGroup.add(volumeBox);
+          gridPlanes.push({ 
+            mesh: volumeBox, 
+            count: 0, 
+            maxCount: 0,
+            gridX: i, 
+            gridY: j
+          });
         }
       }
-      // [4] 누출원 위치
-      const leakSource = new THREE.Vector3(4.8, 2.0, 0.4);
 
-      // [5] 파티클 설정
+      // Enhanced leak source with turbulence
+      const leakSource = new THREE.Vector3(4.5, 0.0, 2.0);
+
+      // Enhanced particle system with Navier-Stokes inspired physics
       const particles = [];
-      const maxParticles = 1000;
-      const interval = 100;
-      const speed = 0.02;
-      const maxAge = 100.0;
+      const maxParticles = 1500;
+      const emissionRate = 50; // particles per second
+      const timeStep = 0.016; // ~60fps
+      const baseSpeed = 0.08;
+      const turbulenceStrength = 0.02;
+      const viscosity = 0.98;
+      const maxAge = 150.0;
+      
+      // Wind field for realistic flow
+      const windField = {
+        x: 0.01,
+        y: -0.005, // slight downward draft
+        z: 0.003
+      };
+
+      let lastEmissionTime = 0;
 
       function createParticle() {
-        const direction = new THREE.Vector3(
+        // Enhanced initial velocity with turbulence
+        const baseDirection = new THREE.Vector3(
           Math.random() * 2 - 1,
-          Math.random() * 2 - 1,
+          Math.random() * 1.5 - 0.5, // bias upward initially
           Math.random() * 2 - 1
         ).normalize();
+        
+        // Add turbulence
+        const turbulence = new THREE.Vector3(
+          (Math.random() - 0.5) * turbulenceStrength,
+          (Math.random() - 0.5) * turbulenceStrength,
+          (Math.random() - 0.5) * turbulenceStrength
+        );
+        
+        const velocity = baseDirection.multiplyScalar(baseSpeed).add(turbulence);
 
         const material = new THREE.MeshBasicMaterial({
-          color: 0xff0000,
+          color: new THREE.Color().setHSL(0.05, 0.8, 0.6), // Orange-red
           transparent: true,
-          opacity: 0.6
+          opacity: 0.7
         });
 
         const particle = new THREE.Mesh(
-          new THREE.SphereGeometry(0.1, 6, 6),
+          new THREE.SphereGeometry(0.08, 8, 8),
           material
         );
-        particle.position.copy(leakSource);
+        
+        // Add slight random offset to emission point
+        const offset = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.2,
+          (Math.random() - 0.5) * 0.2,
+          (Math.random() - 0.5) * 0.2
+        );
+        
+        particle.position.copy(leakSource).add(offset);
         particle.userData = {
-          direction,
-          age: 0
+          velocity: velocity,
+          age: 0,
+          mass: 0.8 + Math.random() * 0.4, // particle mass affects movement
+          density: 1.0
         };
-        scene.add(particle);
+        
+        dispersionGroup.add(particle);
         particles.push(particle);
       }
 
-      setInterval(() => {
-        if (particles.length < maxParticles) createParticle();
-      }, interval);
+      function updateParticles() {
+        const currentTime = Date.now() * 0.001;
+        
+        // Emit particles based on rate
+        if (currentTime - lastEmissionTime > 1.0 / emissionRate) {
+          if (particles.length < maxParticles) {
+            createParticle();
+            lastEmissionTime = currentTime;
+          }
+        }
 
-      function animateDispersion() {
-        requestAnimationFrame(animateDispersion);
+        // Reset grid counts
+        gridPlanes.forEach(g => g.count = 0);
 
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
-          const delta = p.userData.direction.clone().multiplyScalar(speed);
-          const nextPos = p.position.clone().add(delta);
+          const vel = p.userData.velocity;
+          const mass = p.userData.mass;
+          
+          // Apply wind field (external forces)
+          vel.x += windField.x * timeStep;
+          vel.y += windField.y * timeStep;
+          vel.z += windField.z * timeStep;
+          
+          // Add turbulence based on age (more turbulent as it disperses)
+          const turbulenceFactor = Math.min(p.userData.age / 50.0, 1.0);
+          vel.x += (Math.random() - 0.5) * turbulenceStrength * turbulenceFactor * timeStep;
+          vel.y += (Math.random() - 0.5) * turbulenceStrength * turbulenceFactor * timeStep;
+          vel.z += (Math.random() - 0.5) * turbulenceStrength * turbulenceFactor * timeStep;
+          
+          // Apply viscosity (damping)
+          vel.multiplyScalar(viscosity);
+          
+          // Calculate next position
+          const nextPos = p.position.clone().add(vel.clone().multiplyScalar(timeStep * 60));
 
-          // [6-1] 외부 박스 반사
+          // Enhanced boundary collision detection
+          let collided = false;
+          
+          // External box boundaries with momentum transfer
           if (Math.abs(nextPos.x) > halfW) {
-            p.userData.direction.reflect(new THREE.Vector3(1, 0, 0));
-            p.position.x = Math.sign(p.position.x) * halfW;
+            vel.x *= -0.7; // energy loss on collision
+            vel.y *= 0.9;
+            vel.z *= 0.9;
+            p.position.x = Math.sign(p.position.x) * (halfW - 0.1);
+            collided = true;
           }
           if (Math.abs(nextPos.y) > halfH) {
-            p.userData.direction.reflect(new THREE.Vector3(0, 1, 0));
-            p.position.y = Math.sign(p.position.y) * halfH;
+            vel.y *= -0.7;
+            vel.x *= 0.9;
+            vel.z *= 0.9;
+            p.position.y = Math.sign(p.position.y) * (halfH - 0.1);
+            collided = true;
           }
           if (Math.abs(nextPos.z) > halfD) {
-            p.userData.direction.reflect(new THREE.Vector3(0, 0, 1));
-            p.position.z = Math.sign(p.position.z) * halfD;
-          }
+            vel.z *= -0.7;
+            vel.x *= 0.9;
+            vel.y *= 0.9;
+            p.position.z = Math.sign(p.position.z) * (halfD - 0.1);
+            collided = true;
+            }
 
-          // [6-2] 내부 장애물 반사
+          // Internal obstacle collision with improved physics
           for (const obs of obstacles) {
             if (
               nextPos.x > obs.min.x && nextPos.x < obs.max.x &&
               nextPos.y > obs.min.y && nextPos.y < obs.max.y &&
               nextPos.z > obs.min.z && nextPos.z < obs.max.z
             ) {
-              const entry = p.position;
-
-              const distToMin = entry.clone().sub(obs.min);
-              const distToMax = obs.max.clone().sub(entry);
-              const absMin = new THREE.Vector3(Math.abs(distToMin.x), Math.abs(distToMin.y), Math.abs(distToMin.z));
-              const absMax = new THREE.Vector3(Math.abs(distToMax.x), Math.abs(distToMax.y), Math.abs(distToMax.z));
-
-              const minDist = Math.min(
-                absMin.x, absMin.y, absMin.z,
-                absMax.x, absMax.y, absMax.z
-              );
-
-              let normal = new THREE.Vector3(0, 0, 0);
-              if (minDist === absMin.x) normal.set(-1, 0, 0);
-              else if (minDist === absMax.x) normal.set(1, 0, 0);
-              else if (minDist === absMin.y) normal.set(0, -1, 0);
-              else if (minDist === absMax.y) normal.set(0, 1, 0);
-              else if (minDist === absMin.z) normal.set(0, 0, -1);
-              else if (minDist === absMax.z) normal.set(0, 0, 1);
-
-              p.userData.direction.reflect(normal);
+              const center = obs.center;
+              const toParticle = p.position.clone().sub(center);
+              toParticle.normalize();
+              
+              // Reflect velocity with energy loss
+              vel.reflect(toParticle).multiplyScalar(0.6);
+              
+              // Add some random deflection
+              vel.add(new THREE.Vector3(
+                (Math.random() - 0.5) * 0.02,
+                (Math.random() - 0.5) * 0.02,
+                (Math.random() - 0.5) * 0.02
+              ));
+              
+              collided = true;
+              break;
             }
           }
 
-          // 위치 이동
-          p.position.add(p.userData.direction.clone().multiplyScalar(speed));
-
-          // [7] 색상 및 투명도 변화
-          p.userData.age += speed * 5;
-          const t = Math.min(p.userData.age / maxAge, 1);
-          const r = 1;
-          const g = t < 0.5 ? t * 2 : 1;
-          const b = 0;
-          const alpha = t < 0.5 ? 0.6 : 0.6 * (1 - (t - 0.5) * 2);
-
-          p.material.color.setRGB(r, g, b);
-          p.material.opacity = alpha;
-
-          // [8] 수명 초과 시 제거
-          if (p.userData.age > maxAge) {
-            scene.remove(p);
-            particles.splice(i, 1);
+          // Update position if no collision
+          if (!collided) {
+            p.position.copy(nextPos);
           }
 
-          // 그리드별 입자 수 초기화
-          gridPlanes.forEach(g => g.count = 0);
+          // Age and appearance updates
+          p.userData.age += timeStep * 30;
+          const ageRatio = Math.min(p.userData.age / maxAge, 1);
+          
+          // Enhanced color transition for better visibility
+          const hue = 0.05 + ageRatio * 0.15; // red to yellow
+          const saturation = Math.max(0.3, 0.8 - ageRatio * 0.5);
+          const lightness = Math.max(0.3, 0.6 - ageRatio * 0.3);
+          const alpha = Math.max(0, 0.7 - ageRatio * 0.7);
 
-          // XY 평면 기준으로 입자 분포 카운팅
-          particles.forEach(p => {
-            const px = p.position.x + halfW;
-            const py = p.position.y + halfH;
+          p.material.color.setHSL(hue, saturation, lightness);
+          p.material.opacity = alpha;
+          
+          // Scale changes
+          const scale = 1 + ageRatio * 0.5;
+          p.scale.setScalar(scale);
 
-            const i = Math.floor(px / gridWidth);
-            const j = Math.floor(py / gridHeight);
+          // Count particles in 2D grid cells (X-Y plane only, ignore Z position)
+          const px = p.position.x + halfW;
+          const py = p.position.y + halfH;
 
-            if (i >= 0 && i < gridCountX && j >= 0 && j < gridCountY) {
-              const index = i * gridCountY + j;
+          const gridI = Math.floor(px / gridWidth);
+          const gridJ = Math.floor(py / gridHeight);
+
+          if (gridI >= 0 && gridI < gridCountX && 
+              gridJ >= 0 && gridJ < gridCountY) {
+            const index = gridI * gridCountY + gridJ;
+            if (gridPlanes[index]) {
               gridPlanes[index].count++;
             }
-          });
+          }
 
-          // 최댓값 계산
-          const counts = gridPlanes.map(g => g.count);
-          const maxCount = Math.max(...counts);
-          const minCount = Math.min(...counts);
-
-          // 색상 업데이트 (초록 → 빨강)
-          gridPlanes.forEach(g => {
-            const t = maxCount > 0 ? (g.count - minCount) / (maxCount - minCount || 1) : 0;
-            const r = t;
-            const gVal = 1 - t;
-            g.mesh.material.color.setRGB(r, gVal, 0);
-          });
-
+          // Remove aged particles
+          if (p.userData.age > maxAge) {
+            dispersionGroup.remove(p);
+            if (p.geometry) p.geometry.dispose();
+            if (p.material) p.material.dispose();
+            particles.splice(i, 1);
+          }
         }
 
-        renderer.render(scene, camera);
+        // Update 2D grid colors with enhanced heatmap visualization
+        const counts = gridPlanes.map(g => g.count);
+        const maxCount = Math.max(1, ...counts);
+        const globalMaxCount = Math.max(maxCount, ...gridPlanes.map(g => g.maxCount));
+
+        gridPlanes.forEach(g => {
+          // Track maximum count for better normalization
+          g.maxCount = Math.max(g.maxCount * 0.95, g.count); // slight decay
+          
+          const density = g.count / Math.max(1, globalMaxCount);
+          const normalizedDensity = Math.min(1, density * 2); // enhance visibility
+          
+          // Always show grid sections - safe areas in light green, dangerous areas in red spectrum
+          let r, green, b, opacity;
+          
+          if (normalizedDensity > 0.05) {
+            // Dangerous areas: Enhanced color mapping green -> yellow -> orange -> red
+            if (normalizedDensity < 0.3) {
+              // Green to yellow transition (low concentration)
+              const t = normalizedDensity / 0.3;
+              r = t;
+              green = 1;
+              b = 0;
+            } else if (normalizedDensity < 0.7) {
+              // Yellow to orange transition (warning zone)
+              const t = (normalizedDensity - 0.3) / 0.4;
+              r = 1;
+              green = 1 - t * 0.5;
+              b = 0;
+            } else {
+              // Orange to red transition (danger zone)
+              const t = (normalizedDensity - 0.7) / 0.3;
+              r = 1;
+              green = 0.5 - t * 0.5;
+              b = 0;
+            }
+            
+            opacity = Math.min(0.4, 0.08 + normalizedDensity * 0.3);
+          } else {
+            // Safe areas: Light green to indicate safety
+            r = 0.5;      // Light green
+            green = 1.0;  // Full green
+            b = 0.5;      // Light green
+            opacity = 0.2; // Semi-transparent to show it's safe but still visible
+          }
+          
+          g.mesh.material.color.setRGB(r, green, b);
+          g.mesh.material.opacity = opacity;
+          g.mesh.visible = true; // Always show all grid sections
+        });
       }
 
+      function animateDispersion() {
+        updateParticles();
+        window.dispersionAnimationId = requestAnimationFrame(animateDispersion);
+      }
+
+      isDispersionActive = true;
       animateDispersion();
     }
 
-    let isDragging = false, offsetX = 0, offsetY = 0;
-
-    popupHeader.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      const rect = popup.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (isDragging) {
-        popup.style.left = (e.clientX - offsetX) + 'px';
-        popup.style.top = (e.clientY - offsetY) + 'px';
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-
-    window.addEventListener('resize', () => {
-      const container = document.getElementById('viewer');
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-
-    window.addEventListener('click', (event) => {
-
-      // 1. 데모 버튼이면 raycaster 검사 생략
-      if (
-        event.target.closest('#popup') ||
-        event.target.closest('#overlay-buttons')
-      ) return;
-
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(clickableCubes);
-
-      if (intersects.length > 0) {
-        const obj = intersects[0].object;
+    function showSensorInfo(sensorObj) {
+      popupLocked = false;
+      popupTitleElement.textContent = sensorObj.userData.name + " - 센서 정보";
       
-        // 누출 sphere인 경우만 csv 로드
-        if (obj.userData.name?.startsWith('Leak')) {
-          const csvPath = 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_7-1.csv';  // 실제 경로에 맞게 조정
+      const pos = sensorObj.userData.position;
+      const specs = sensorObj.userData.specifications;
       
-          clearInterval(leakTimer);
-          leakChart?.destroy();
-          leakData = [];
-          leakIndex = 0;
+      const html = `
+        <div style="font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.4; padding: 10px; box-sizing: border-box;">
+          <div style="background: linear-gradient(135deg, #007AFF 0%, #0056b3 100%); color: white; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+            <h3 style="margin: 0 0 6px 0; font-size: 1.1em; font-weight: 600;">${sensorObj.userData.name}</h3>
+            <p style="margin: 0; opacity: 0.9; font-size: 0.85em;">NH₃ 가스 센서</p>
+          </div>
+          
+          <div style="display: grid; gap: 10px;">
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 4px solid #007AFF;">
+              <h4 style="margin: 0 0 6px 0; color: #1d1d1f; font-size: 0.9em; font-weight: 600;">위치 좌표</h4>
+              <p style="margin: 0; font-family: 'SF Mono', monospace; font-size: 0.8em; color: #666;">
+                X: ${pos.x.toFixed(3)} m, Y: ${pos.y.toFixed(3)} m, Z: ${pos.z.toFixed(3)} m
+              </p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 4px solid #34C759;">
+              <h4 style="margin: 0 0 6px 0; color: #1d1d1f; font-size: 0.9em; font-weight: 600;">센서 사양</h4>
+              <div style="font-size: 0.8em; color: #666; line-height: 1.3;">
+                <p style="margin: 0 0 3px 0;"><strong>센서 타입:</strong> EC</p>
+                <p style="margin: 0 0 3px 0;"><strong>측정 범위:</strong> 0 ~ 100 ppm</p>
+                <p style="margin: 0;"><strong>정확도:</strong> ±2 %</p>
+              </div>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 10px; border-radius: 6px; border-left: 4px solid #FF9500;">
+              <h4 style="margin: 0 0 6px 0; color: #1d1d1f; font-size: 0.9em; font-weight: 600;">상태</h4>
+              <p style="margin: 0; font-size: 0.8em; color: #666;">
+                <span class="sensor-status-indicator" style="display: inline-block; width: 8px; height: 8px; background: #34C759; border-radius: 50%; margin-right: 6px;"></span>
+                정상 작동 중
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('popup-content').innerHTML = html;
+      popup.style.width = '380px';
+      popup.style.height = '400px';
+      popup.style.bottom = '20px';
+      popup.style.right = '20px';
+      popup.style.top = 'auto';
+      popup.style.left = 'auto';
+      popup.style.transform = 'none';
       
-          fetch(csvPath)
-            .then(response => response.text())
-            .then(csvText => {
-              const lines = csvText.trim().split('\n');
-              const headers = lines[0].split(',');
-              const timeIdx = headers.indexOf('Time (sec)');
-              const valueIndices = headers
-                .map((h, i) => ({ name: h.trim(), idx: i }))
-                .filter(obj => obj.name !== 'Time (sec)');
+      // Show popup with animation
+      popup.classList.add('show');
+    }
+
+    function closePopup() {
+      // Reset all toggle states
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
       
-              for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(',');
-                const time = parseFloat(parts[timeIdx]);
-                const values = valueIndices.map(obj => parseFloat(parts[obj.idx]));
-                leakData.push({ x: time, yValues: values });
-              }
+      // Hide popup with animation
+      popup.classList.remove('show');
       
-              document.getElementById('popup-content').innerHTML = `<canvas id="leakChart" width="100%" height="100%"></canvas>`;
-              popup.style.left = event.offsetX + 10 + 'px';
-              popup.style.top = event.offsetY + 10 + 'px';
-              popup.style.display = 'block';
-      
-              const ctx = document.getElementById('leakChart').getContext('2d');
-              leakChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                  datasets: valueIndices.map((obj, index) => ({
-                    label: obj.name,
-                    data: [],
-                    borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-                    backgroundColor: `hsla(${(index * 60) % 360}, 70%, 50%, 0.2)`,
-                    fill: false,
-                    tension: 0.2
-                  }))
-                },
-                options: {
-                  animation: false,
-                  scales: {
-                    x: {
-                      type: 'linear',
-                      title: { display: true, text: 'Time [s]' }
-                    },
-                    y: {
-                      title: { display: true, text: 'NH3 [ppm]' }
-                    }
-                  },
-                  responsive: true,
-                  maintainAspectRatio: false
-                }
-              });
-      
-              leakTimer = setInterval(() => {
-                if (leakIndex < leakData.length) {
-                  const point = leakData[leakIndex];
-                  point.yValues.forEach((val, idx) => {
-                    leakChart.data.datasets[idx].data.push({ x: point.x, y: val });
-                  });
-                  leakChart.options.scales.x.max = leakData[leakIndex].x + 1;
-                  leakChart.update();
-                  leakIndex++;
-                } else {
-                  clearInterval(leakTimer);
-                }
-              }, 1000 / 5);  // speedFactor 적용
-            })
-            .catch(error => {
-              document.getElementById('popup-content').innerHTML = `<p style="color:red;">CSV 로드 실패: ${error}</p>`;
-              popup.style.display = 'block';
-            });
-      
-        } else {
-          // 기존 이미지 팝업 처리 유지
-          const name = obj.userData.name;
-          const imgPath = obj.userData.image || 'default.png';
-      
-          const html = `
-            <strong>${name}</strong><br>
-            <img src="${imgPath}" alt="${name}" style="width:100%; max-height:150px; object-fit:contain; margin-top:5px;"><br>
-            <em>(x: ${event.clientX}, y: ${obj.position.y.toFixed(2)}, z: ${obj.position.z.toFixed(2)})</em>
-          `;
-          document.getElementById('popup-content').innerHTML = html;
-          popup.style.left = event.offsetX + 10 + 'px';
-          popup.style.top = event.offsetY + 10 + 'px';
-          popup.style.display = 'block';
+      // Stop animations after transition completes
+      setTimeout(() => {
+        // Stop neural network animation
+        if (window.neuralNetAnimationId) {
+          cancelAnimationFrame(window.neuralNetAnimationId);
+          window.neuralNetAnimationId = null;
         }
-      }
-    });
 
-    window.addEventListener('mousemove', (event) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(clickableCubes);
-    
-      if (intersects.length > 0) {
-        if (INTERSECTED !== intersects[0].object) {
-          // 기존 intersected 객체 색상 복구
+        // Stop chart animation
+        if (leakTimer) {
+          clearInterval(leakTimer);
+          leakTimer = null;
+        }
+        if (leakChart) {
+          leakChart.destroy();
+          leakChart = null;
+        }
+
+        // Stop dispersion animation
+        if (window.dispersionInterval) {
+          clearInterval(window.dispersionInterval);
+          window.dispersionInterval = null;
+        }
+        if (window.dispersionAnimationId) {
+          cancelAnimationFrame(window.dispersionAnimationId);
+          window.dispersionAnimationId = null;
+        }
+
+        // Clear dispersion objects
+        if (dispersionGroup) {
+          dispersionGroup.clear();
+        }
+        isDispersionActive = false;
+
+        // Remove status cubes
+        ['GE#1', 'GE#2', 'GE#3'].forEach(cubeName => {
+          const existingCube = scene.getObjectByName(cubeName);
+          if (existingCube) {
+            scene.remove(existingCube);
+            if (existingCube.geometry) existingCube.geometry.dispose();
+            if (existingCube.material) existingCube.material.dispose();
+          }
+        });
+      }, 500); // Wait for animation to complete
+
+      popupLocked = false;
+    }
+
+    function setupEventListeners() {
+      // Draggable popup
+      let isDragging = false, offsetX = 0, offsetY = 0;
+
+      popupHeader.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // Prevent text selection
+        isDragging = true;
+        const rect = popup.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        document.body.style.userSelect = 'none'; // Prevent text selection during drag
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          e.preventDefault(); // Prevent text selection
+          const newLeft = e.clientX - offsetX;
+          const newTop = e.clientY - offsetY;
+          
+          // Constrain popup to viewport
+          const maxLeft = window.innerWidth - popup.offsetWidth;
+          const maxTop = window.innerHeight - popup.offsetHeight;
+          
+          popup.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
+          popup.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
+          popup.style.transform = 'none';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.userSelect = ''; // Restore text selection
+        }
+      });
+
+      // ESC key support for closing popups
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && popup.classList.contains('show')) {
+          closePopup();
+        }
+      });
+
+      // Responsive resize
+      window.addEventListener('resize', () => {
+        const container = document.getElementById('viewer');
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      // Click handling for 3D objects
+      window.addEventListener('click', (event) => {
+        if (
+          event.target.closest('#popup') ||
+          event.target.closest('#overlay-buttons') ||
+          event.target.closest('#leak-buttons') ||
+          event.target.closest('#guide-button') ||
+          event.target.closest('#toggle-labels-btn')
+        ) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(window.clickableCubes);
+
+        if (intersects.length > 0) {
+          const obj = intersects[0].object;
+
+          // Handle sensor clicks
+          if (obj.userData.type === 'sensor') {
+            showSensorInfo(obj);
+          }
+          // Handle leak point clicks
+          else if (obj.userData.name?.startsWith('Leak')) {
+            const leakNumber = obj.userData.leakNumber;
+            if (leakNumber && leakNumber <= 6) {
+              showLeakData(leakNumber);
+            } else if (leakNumber === 7) {
+              LeakDetection();
+            }
+          }
+        }
+      });
+
+      // Mouse hover effects
+      window.addEventListener('mousemove', (event) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(window.clickableCubes);
+
+        if (intersects.length > 0) {
+          if (INTERSECTED !== intersects[0].object) {
+            if (INTERSECTED) {
+              const originalColor = INTERSECTED.userData.originalColor || 0xff0000;
+              INTERSECTED.material.color.set(originalColor);
+            }
+
+            INTERSECTED = intersects[0].object;
+            INTERSECTED.material.color.set(0xffff00);
+          }
+        } else {
           if (INTERSECTED) {
             const originalColor = INTERSECTED.userData.originalColor || 0xff0000;
             INTERSECTED.material.color.set(originalColor);
+            INTERSECTED = null;
           }
-    
-          INTERSECTED = intersects[0].object;
-          INTERSECTED.material.color.set(0xffff00); // hover 시 노란색
         }
-      } else {
-        if (INTERSECTED) {
-          const originalColor = INTERSECTED.userData.originalColor || 0xff0000;
-          INTERSECTED.material.color.set(originalColor);
-          INTERSECTED = null;
-        }
+      });
+    }
+
+    // Toggle guide system
+    function toggleGuide() {
+      if (toggleStates.guide) {
+        closePopup();
+        toggleStates.guide = false;
+        return;
       }
-    });
+      
+      // Reset other toggles
+      Object.keys(toggleStates).forEach(key => toggleStates[key] = false);
+      toggleStates.guide = true;
+      
+      showGuide();
+    }
 
+    // User-friendly guide system with comprehensive tutorial
+    function showGuide() {
+      popupLocked = false;
+      popupTitleElement.textContent = "💡 시스템 사용법 가이드";
+      
+      const html = `
+        <div style="font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; padding: 15px; box-sizing: border-box; height: 100%; overflow-y: auto;">
+          
+          <!-- Header Section -->
+          <div style="background: linear-gradient(135deg, #007AFF 0%, #0056b3 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+            <h2 style="margin: 0 0 8px 0; font-size: 1.4em; font-weight: 700;">AI 누출원 탐지 시스템</h2>
+            <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">사용법 가이드</p>
+          </div>
 
+          <!-- Main Features -->
+          <div style="margin-bottom: 25px;">
+            <h3 style="color: #1d1d1f; font-size: 1.1em; font-weight: 600; margin: 0 0 12px 0; border-bottom: 2px solid #007AFF; padding-bottom: 5px;">🎯 주요 기능</h3>
+            
+            <div style="display: grid; gap: 12px;">
+              <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #007AFF;">
+                <h4 style="margin: 0 0 6px 0; color: #007AFF; font-size: 0.95em; font-weight: 600;">🤖 AI 신경망 학습</h4>
+                <p style="margin: 0; font-size: 0.85em; color: #666;">딥러닝 신경망의 실시간 학습 과정을 시각화합니다. 마우스 드래그로 이동, 휠로 확대/축소 가능합니다.</p>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h4 style="margin: 0 0 6px 0; color: #28a745; font-size: 0.95em; font-weight: 600;">🔍 AI 기반 누출 탐지</h4>
+                <p style="margin: 0; font-size: 0.85em; color: #666;">학습된 AI 모델로 누출원(Leak #7)을 탐지하고 분석합니다.</p>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                <h4 style="margin: 0 0 6px 0; color: #17a2b8; font-size: 0.95em; font-weight: 600;">🌊 암모니아 확산 양상</h4>
+                <p style="margin: 0; font-size: 0.85em; color: #666;">암모니아가 누출되어 가장 위험한 곳을 표시합니다.</p>
+              </div>
+            </div>
+          </div>
 
-    addLabeledCube(3.45, 1.11, -0.565, 'Sensor #1', 1, );
-    addLabeledCube(-0.507, 1.11, -0.565, 'Sensor #2', 1, );
-    addLabeledCube(-4.46, 1.11, -0.565, 'Sensor #3', 1, );
-    addLabeledCube(4.26, 1.11, 0.360, 'Sensor #4', 1, );
-    addLabeledCube(0.304, 1.11, 0.360, 'Sensor #5', 1, );
-    addLabeledCube(-3.65, 1.11, 0.360, 'Sensor #6', 1, );
+          <!-- Interactive Controls -->
+          <div style="margin-bottom: 25px;">
+            <h3 style="color: #1d1d1f; font-size: 1.1em; font-weight: 600; margin: 0 0 12px 0; border-bottom: 2px solid #28a745; padding-bottom: 5px;">🖱️ 상호작용 방법</h3>
+            
+            <div style="display: grid; gap: 10px;">
+              <div style="background: #fff3cd; padding: 10px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h4 style="margin: 0 0 6px 0; color: #856404; font-size: 0.9em; font-weight: 600;">3D 뷰어 조작</h4>
+                <ul style="margin: 6px 0 0 0; padding-left: 16px; font-size: 0.8em; color: #666;">
+                  <li>마우스 좌클릭 + 드래그: 시점 회전</li>
+                  <li>마우스 휠: 확대/축소</li>
+                  <li>마우스 우클릭 + 드래그: 카메라 이동</li>
+                </ul>
+              </div>
+              
+              <div style="background: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h4 style="margin: 0 0 6px 0; color: #155724; font-size: 0.9em; font-weight: 600;">객체 클릭</h4>
+                <ul style="margin: 6px 0 0 0; padding-left: 16px; font-size: 0.8em; color: #666;">
+                  <li>센서 클릭: 센서 상세 정보 표시</li>
+                  <li>Leak #1~6 클릭: 해당 누출원 데이터 차트 표시</li>
+                  <li>Leak #7 클릭: AI 기반 실시간 탐지 시작</li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-    const sphereSize = 0.5;
-    addLeakPoint(3.0, 3.0, -1.0,'Leak #1', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_1-1.png');
-    addLeakPoint(-0.9, 3.0, -1.0,'Leak #2', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_2-1.png');
-    addLeakPoint(-4.8, 3, -1.0,'Leak #3', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_3-1.png');
-    addLeakPoint(4.5, -1.5, 2,'Leak #4', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_4-1.png');
-    addLeakPoint(0.6, -1.5, 2,'Leak #5', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_5-1.png');
-    addLeakPoint(-3.3, -1.5, 2,'Leak #6', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_6-1.png');
-    addLeakPoint(4.5, -0.0, 2,'Leak #7', sphereSize, 'https://raw.githubusercontent.com/Jaehui-Jeong/TestSources/refs/heads/main/sensor_data/scenario_6-1.png');
+          <!-- Leak Data Analysis -->
+          <div style="margin-bottom: 25px;">
+            <h3 style="color: #1d1d1f; font-size: 1.1em; font-weight: 600; margin: 0 0 12px 0; border-bottom: 2px solid #dc3545; padding-bottom: 5px;">📊 누출 데이터 분석</h3>
+            
+            <div style="background: #f8d7da; padding: 12px; border-radius: 8px; border-left: 4px solid #dc3545;">
+              <h4 style="margin: 0 0 8px 0; color: #721c24; font-size: 0.95em; font-weight: 600;">Leak #1 ~ #6</h4>
+              <p style="margin: 0 0 8px 0; font-size: 0.85em; color: #666;">좌측 버튼 클릭 또는 3D 모델에서 직접 클릭하여 각 누출원의 센서 데이터를 확인할 수 있습니다.</p>
+              <ul style="margin: 6px 0 0 0; padding-left: 16px; font-size: 0.8em; color: #721c24;">
+                <li>실시간 농도 변화 그래프</li>
+                <li>센서별 반응 패턴 분석</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Visual Elements -->
+          <div style="margin-bottom: 25px;">
+            <h3 style="color: #1d1d1f; font-size: 1.1em; font-weight: 600; margin: 0 0 12px 0; border-bottom: 2px solid #6f42c1; padding-bottom: 5px;">🎨 시각적 요소</h3>
+            
+            <div style="display: grid; gap: 10px;">
+              <div style="background: #e2e3e5; padding: 10px; border-radius: 8px; border-left: 4px solid #6c757d;">
+                <h4 style="margin: 0 0 6px 0; color: #495057; font-size: 0.9em; font-weight: 600;">센서 표시</h4>
+                <p style="margin: 0; font-size: 0.8em; color: #666;">파란색 정육면체로 표시되며, Labels 토글로 이름 표시/숨김이 가능합니다.</p>
+              </div>
+              
+              <div style="background: #f1f3f4; padding: 10px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+                <h4 style="margin: 0 0 6px 0; color: #6f42c1; font-size: 0.9em; font-weight: 600;">확산 시뮬레이션</h4>
+                <p style="margin: 0; font-size: 0.8em; color: #666;">
+                  • 안전 구역: 연한 초록색 (농도 낮음)<br>
+                  • 위험 구역: 노란색 → 주황색 → 빨간색 (농도 증가)<br>
+                  • 입자 효과: 실시간 확산 패턴 시각화
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips & Shortcuts -->
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #1d1d1f; font-size: 1.1em; font-weight: 600; margin: 0 0 12px 0; border-bottom: 2px solid #fd7e14; padding-bottom: 5px;">💡 유용한 팁</h3>
+            
+            <div style="background: #fff3cd; padding: 12px; border-radius: 8px; border-left: 4px solid #fd7e14;">
+              <ul style="margin: 0; padding-left: 16px; font-size: 0.85em; color: #856404;">
+                <li><strong>ESC 키:</strong> 열려있는 팝업 창을 빠르게 닫습니다</li>
+                <li><strong>팝업 드래그:</strong> 팝업 상단 바를 드래그하여 위치 조정 가능</li>
+                <li><strong>신경망 뷰:</strong> 휠로 확대/축소, 드래그로 이동, Reset View 버튼으로 초기화</li>
+                <li><strong>동시 실행:</strong> 여러 기능을 동시에 실행하면 이전 작업이 자동으로 정리됩니다</li>
+                <li><strong>반응형 디자인:</strong> 모바일 및 태블릿에서도 최적화된 인터페이스</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById('popup-content').innerHTML = html;
+      
+      // Set popup size for guide content
+      popup.style.width = '500px';
+      popup.style.maxWidth = '90vw';
+      popup.style.height = '600px';
+      popup.style.maxHeight = '85vh';
+      popup.style.bottom = '20px';
+      popup.style.right = '20px';
+      popup.style.top = 'auto';
+      popup.style.left = 'auto';
+      popup.style.transform = 'none';
+      
+      // Show popup with animation
+      popup.classList.add('show');
+    }
 
   </script>
 
